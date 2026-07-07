@@ -2,7 +2,6 @@ package com.moddynerd.transiq.shared.exception;
 
 import com.moddynerd.transiq.auth.exception.BadRequestException;
 import com.moddynerd.transiq.auth.exception.ResourceNotFoundException;
-import com.moddynerd.transiq.auth.exception.UnauthorizedException;
 import com.moddynerd.transiq.merchant.exception.MerchantAlreadyExistsException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;

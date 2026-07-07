@@ -1,30 +1,70 @@
 package com.moddynerd.transiq.payment.controller;
 
-import com.moddynerd.transiq.apikey.security.ApiKeyPrincipal;
-import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import com.moddynerd.transiq.payment.dto.ConfirmPaymentRequest;
+import com.moddynerd.transiq.payment.dto.CreatePaymentRequest;
+import com.moddynerd.transiq.payment.dto.CreatePaymentResponse;
+import com.moddynerd.transiq.payment.dto.PaymentResponse;
+import com.moddynerd.transiq.payment.service.PaymentService;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/payments")
+@RequiredArgsConstructor
 public class PaymentController {
 
-    @GetMapping("/test")
-    public String test(Authentication authentication) {
+    private final PaymentService paymentService;
 
-        ApiKeyPrincipal principal =
-                (ApiKeyPrincipal) authentication.getPrincipal();
+    @PostMapping
+    public ResponseEntity<CreatePaymentResponse> createPayment(
 
-        return """
-                Merchant: %s
-                Environment: %s
-                Type: %s
-                """
-                .formatted(
-                        principal.merchant().getBusinessName(),
-                        principal.environment(),
-                        principal.type()
+            @RequestHeader("Idempotency-Key")
+            String idempotencyKey,
+
+            @Valid
+            @RequestBody
+            CreatePaymentRequest request
+    ) {
+
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(
+                        paymentService.createPayment(
+                                idempotencyKey,
+                                request
+                        )
                 );
     }
+
+    @GetMapping("/{paymentReference}")
+    public ResponseEntity<PaymentResponse> getPayment(
+            @PathVariable String paymentReference
+    ) {
+
+        return ResponseEntity.ok(
+                paymentService.getPayment(paymentReference)
+        );
+    }
+
+    @PostMapping("/{paymentReference}/confirm")
+    public ResponseEntity<PaymentResponse> confirmPayment(
+
+            @PathVariable
+            String paymentReference,
+
+            @Valid
+            @RequestBody
+            ConfirmPaymentRequest request
+    ) {
+
+        return ResponseEntity.ok(
+                paymentService.confirmPayment(
+                        paymentReference,
+                        request
+                )
+        );
+    }
+
 }

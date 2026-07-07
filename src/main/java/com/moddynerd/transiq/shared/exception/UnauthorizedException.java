@@ -1,4 +1,4 @@
-package com.moddynerd.transiq.auth.exception;
+package com.moddynerd.transiq.shared.exception;
 
 public class UnauthorizedException extends RuntimeException {
 

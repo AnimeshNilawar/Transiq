@@ -5,7 +5,7 @@ import com.moddynerd.transiq.auth.dto.LoginResponse;
 import com.moddynerd.transiq.auth.dto.RegisterRequest;
 import com.moddynerd.transiq.auth.entity.MerchantUser;
 import com.moddynerd.transiq.auth.exception.ForbiddenException;
-import com.moddynerd.transiq.auth.exception.UnauthorizedException;
+import com.moddynerd.transiq.shared.exception.UnauthorizedException;
 import com.moddynerd.transiq.auth.repository.MerchantUserRepository;
 import com.moddynerd.transiq.merchant.entity.Merchant;
 import com.moddynerd.transiq.merchant.exception.MerchantAlreadyExistsException;
