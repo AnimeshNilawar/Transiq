@@ -1,10 +1,13 @@
 package com.moddynerd.transiq.merchant.entity;
 
+import com.moddynerd.transiq.apikey.entity.ApiKey;
 import com.moddynerd.transiq.merchant.enums.MerchantStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -36,6 +39,13 @@ public class Merchant {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private MerchantStatus status;
+
+    @OneToMany(
+            mappedBy = "merchant",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
+    private List<ApiKey> apiKeys = new ArrayList<>();
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;

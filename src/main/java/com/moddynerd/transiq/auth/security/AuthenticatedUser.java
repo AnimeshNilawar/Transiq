@@ -37,4 +37,8 @@ public class AuthenticatedUser implements UserDetails{
     public boolean isEnabled() {
         return UserDetails.super.isEnabled();
     }
+
+    public MerchantUser getUser() {
+        return user;
+    }
 }
