@@ -7,6 +7,9 @@ import com.moddynerd.transiq.payment.authorization.AuthorizationEngine;
 import com.moddynerd.transiq.payment.authorization.AuthorizationResult;
 import com.moddynerd.transiq.payment.entity.Payment;
 import com.moddynerd.transiq.payment.entity.PaymentStatus;
+import com.moddynerd.transiq.payment.financialEvent.entity.FinancialEvent;
+import com.moddynerd.transiq.payment.financialEvent.entity.FinancialEventType;
+import com.moddynerd.transiq.payment.financialEvent.service.FinancialEventService;
 import com.moddynerd.transiq.payment.ledger.service.LedgerService;
 import com.moddynerd.transiq.payment.repository.PaymentRepository;
 import com.moddynerd.transiq.payment.state.PaymentStateMachine;
@@ -24,6 +27,7 @@ public class PaymentProcessorImpl implements PaymentProcessor {
     private final PaymentRepository paymentRepository;
     private final AuthorizationEngine authorizationEngine;
     private final LedgerService ledgerService;
+    private final FinancialEventService financialEventService;
 
     @Override
     public void process(Payment payment) {
@@ -52,7 +56,17 @@ public class PaymentProcessorImpl implements PaymentProcessor {
                     PaymentStatus.SUCCEEDED
             );
 
-            ledgerService.recordSuccessfulPayment(payment);
+            FinancialEvent event =
+                    financialEventService.create(
+                            FinancialEventType.PAYMENT,
+                            payment.getPaymentReference(),
+                            "Payment completed"
+                    );
+
+            ledgerService.recordSuccessfulPayment(
+                    event,
+                    payment
+            );
 
         } else {
 

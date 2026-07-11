@@ -9,7 +9,6 @@ import com.moddynerd.transiq.shared.security.CurrentApiKeyService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
 import java.util.List;
 
 @Service
@@ -26,7 +25,7 @@ public class MerchantBalanceServiceImpl implements MerchantBalanceService {
 
         List<LedgerEntry> entries = ledgerEntryRepository.findAllByMerchantOrderByCreatedAtAsc(merchant);
 
-        BigDecimal balance = balanceCalculator.calculateMerchantBalance(entries);
+        Long balance = balanceCalculator.calculateMerchantBalance(entries);
 
         return new MerchantBalanceResponse(balance, "INR");
     }

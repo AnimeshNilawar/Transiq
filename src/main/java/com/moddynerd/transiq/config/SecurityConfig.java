@@ -68,7 +68,9 @@ public class SecurityConfig {
         http
                 .securityMatcher(
                         "/api/v1/payments/**",
-                        "/api/v1/ledger/**"
+                        "/api/v1/ledger/**",
+                        "/api/v1/settlements/**",
+                        "/api/v1/refunds/**"
                 )
 
                 .csrf(csrf -> csrf.disable())

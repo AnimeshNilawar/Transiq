@@ -1,48 +1,43 @@
-package com.moddynerd.transiq.payment.ledger.entity;
+package com.moddynerd.transiq.payment.refund.entity;
 
 import com.moddynerd.transiq.merchant.entity.Merchant;
 import com.moddynerd.transiq.payment.entity.Payment;
-import com.moddynerd.transiq.payment.financialEvent.entity.FinancialEvent;
-import com.moddynerd.transiq.payment.settlement.entity.Settlement;
 import com.moddynerd.transiq.shared.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
-
-
 @Entity
-@Table(name = "ledger_entries")
+@Table(name = "refunds")
 @Getter
 @Setter
 @SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
-public class LedgerEntry extends BaseEntity {
+public class Refund extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(nullable = false)
-    private FinancialEvent financialEvent;
+    private Payment payment;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(nullable = false)
     private Merchant merchant;
 
-    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private LedgerEntryType entryType;
+    private String idempotencyKey;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private LedgerAccount account;
+    @Column(nullable = false, unique = true)
+    private String refundReference;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private EntrySide side;
-
-    @Column(nullable = false)
+    @Column(nullable = false, precision = 19, scale = 2)
     private Long amount;
 
-    @Column(length = 300)
-    private String description;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private RefundStatus status;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private RefundReason reason;
 }

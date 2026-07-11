@@ -39,6 +39,9 @@ public class Payment extends BaseEntity {
     @Column(length = 30)
     private PaymentMethodType paymentMethodType;
 
+    @Builder.Default
+    private Long refundedAmount = 0L;
+
     @Column(length = 255)
     private String customerEmail;
 

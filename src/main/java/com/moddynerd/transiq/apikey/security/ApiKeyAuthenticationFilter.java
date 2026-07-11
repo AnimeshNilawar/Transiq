@@ -28,7 +28,7 @@ public class ApiKeyAuthenticationFilter extends OncePerRequestFilter {
 
         String path = request.getServletPath();
 
-        if (!path.startsWith("/api/v1/payments") && !path.startsWith("/api/v1/ledger")) {
+        if (!path.startsWith("/api/v1/payments") && !path.startsWith("/api/v1/ledger") && !path.startsWith("/api/v1/settlements") && !path.startsWith("/api/v1/refunds")) {
             filterChain.doFilter(request, response);
             return;
         }
