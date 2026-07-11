@@ -67,4 +67,14 @@ public class PaymentController {
         );
     }
 
+    @PostMapping("/{paymentReference}/retry")
+    public ResponseEntity<PaymentResponse> retryPayment(
+            @PathVariable String paymentReference
+    ) {
+
+        return ResponseEntity.ok(
+                paymentService.retryPayment(paymentReference)
+        );
+    }
+
 }

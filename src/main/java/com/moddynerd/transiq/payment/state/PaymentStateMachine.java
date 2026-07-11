@@ -19,8 +19,7 @@ public class PaymentStateMachine {
         Set<PaymentStatus> allowedTransitions =
                 switch (currentStatus) {
 
-                    case CREATED -> null;
-
+                    case CREATED, EXPIRED -> null;
                     case REQUIRES_PAYMENT_METHOD ->
                             PaymentTransition.FROM_REQUIRES_PAYMENT_METHOD;
 

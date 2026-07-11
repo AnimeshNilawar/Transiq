@@ -12,7 +12,8 @@ public final class PaymentTransition {
     public static final Set<PaymentStatus> FROM_REQUIRES_PAYMENT_METHOD =
             Set.of(
                     PaymentStatus.PROCESSING,
-                    PaymentStatus.CANCELLED
+                    PaymentStatus.CANCELLED,
+                    PaymentStatus.EXPIRED
             );
 
     public static final Set<PaymentStatus> FROM_PROCESSING =

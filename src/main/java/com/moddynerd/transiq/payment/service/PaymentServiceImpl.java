@@ -1,6 +1,5 @@
 package com.moddynerd.transiq.payment.service;
 
-import com.moddynerd.transiq.apikey.security.ApiKeyPrincipal;
 import com.moddynerd.transiq.auth.exception.ResourceNotFoundException;
 import com.moddynerd.transiq.merchant.entity.Merchant;
 import com.moddynerd.transiq.payment.dto.ConfirmPaymentRequest;
@@ -10,10 +9,13 @@ import com.moddynerd.transiq.payment.dto.PaymentResponse;
 import com.moddynerd.transiq.payment.entity.Payment;
 import com.moddynerd.transiq.payment.entity.PaymentMethodType;
 import com.moddynerd.transiq.payment.entity.PaymentStatus;
+import com.moddynerd.transiq.payment.expiration.PaymentExpirationService;
 import com.moddynerd.transiq.payment.mapper.PaymentMapper;
 import com.moddynerd.transiq.payment.processor.PaymentProcessor;
 import com.moddynerd.transiq.payment.repository.PaymentRepository;
+import com.moddynerd.transiq.payment.security.ClientSecretService;
 import com.moddynerd.transiq.payment.state.PaymentStateMachine;
+import com.moddynerd.transiq.shared.exception.ConflictException;
 import com.moddynerd.transiq.shared.security.CurrentApiKeyService;
 import com.moddynerd.transiq.shared.util.ClientSecretGenerator;
 import com.moddynerd.transiq.shared.util.PaymentReferenceGenerator;
@@ -22,6 +24,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.Optional;
 
 @Service
@@ -35,6 +38,9 @@ public class PaymentServiceImpl
     private final PasswordEncoder passwordEncoder;
     private final CurrentApiKeyService currentApiKeyService;
     private final PaymentProcessor paymentProcessor;
+    private final PaymentStateMachine paymentStateMachine;
+    private final ClientSecretService clientSecretService;
+    private final PaymentExpirationService paymentExpirationService;
 
     @Override
     public CreatePaymentResponse createPayment(
@@ -83,6 +89,7 @@ public class PaymentServiceImpl
                 .orderId(request.orderId())
                 .description(request.description())
                 .clientSecretHash(clientSecretHash)
+                .expiresAt(Instant.now().plusSeconds(15*60))
                 .build();
 
         paymentRepository.save(payment);
@@ -123,9 +130,44 @@ public class PaymentServiceImpl
                 .orElseThrow(() ->
                         new ResourceNotFoundException("Payment not found"));
 
+        paymentExpirationService.validate(payment);
+
+        clientSecretService.verify(
+                payment,
+                request.clientSecret()
+        );
+
         payment.setPaymentMethodType(request.paymentMethodType());
 
         paymentRepository.save(payment);
+
+        paymentProcessor.process(payment);
+
+        return paymentMapper.toResponse(payment);
+    }
+
+    @Override
+    public PaymentResponse retryPayment(String paymentReference) {
+        Merchant merchant = currentApiKeyService.getCurrentPrincipal().merchant();
+
+        Payment payment = paymentRepository.findByMerchantAndPaymentReference(
+                merchant,
+                paymentReference
+        ).orElseThrow( () -> new ResourceNotFoundException("Payment not Found"));
+
+        paymentExpirationService.validate(payment);
+
+        if(payment.getStatus() != PaymentStatus.FAILED && payment.getStatus() != PaymentStatus.REQUIRES_PAYMENT_METHOD){
+            throw  new ConflictException("Payment cannot be retried in current state");
+        }
+
+        if(payment.getStatus() == PaymentStatus.FAILED){
+            paymentStateMachine.transition(
+                    payment,
+                    PaymentStatus.REQUIRES_PAYMENT_METHOD
+            );
+            paymentRepository.save(payment);
+        }
 
         paymentProcessor.process(payment);
 

@@ -6,6 +6,8 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
+import java.time.Instant;
+
 @Entity
 @Table(name = "payments")
 @Getter
@@ -54,6 +56,9 @@ public class Payment extends BaseEntity {
 
     @Column(unique = true, length = 100)
     private String idempotencyKey;
+
+    @Column(nullable = false)
+    private Instant expiresAt;
 
     @Lob
     private String metadata;

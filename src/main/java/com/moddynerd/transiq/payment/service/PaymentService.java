@@ -18,4 +18,6 @@ public interface PaymentService {
             String paymentReference,
             ConfirmPaymentRequest request
     );
+
+    PaymentResponse retryPayment(String paymentReference);
 }

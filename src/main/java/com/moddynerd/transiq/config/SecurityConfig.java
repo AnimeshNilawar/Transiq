@@ -2,7 +2,10 @@ package com.moddynerd.transiq.config;
 
 import com.moddynerd.transiq.apikey.security.ApiKeyAuthenticationEntryPoint;
 import com.moddynerd.transiq.apikey.security.ApiKeyAuthenticationFilter;
+import com.moddynerd.transiq.apikey.service.ApiKeyAuthenticationService;
+import com.moddynerd.transiq.auth.security.CustomUserDetailsService;
 import com.moddynerd.transiq.auth.security.JwtAuthenticationFilter;
+import com.moddynerd.transiq.auth.service.JwtService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -19,10 +22,11 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final JwtAuthenticationFilter jwtAuthenticationFilter;
-    private final ApiKeyAuthenticationFilter apiKeyAuthenticationFilter;
     private final AuthenticationProvider authenticationProvider;
     private final ApiKeyAuthenticationEntryPoint apiKeyAuthenticationEntryPoint;
+    private final JwtService jwtService;
+    private final CustomUserDetailsService customUserDetailsService;
+    private final ApiKeyAuthenticationService apiKeyAuthenticationService;
 
     @Bean
     @Order(1)
@@ -48,7 +52,7 @@ public class SecurityConfig {
                 .authenticationProvider(authenticationProvider)
 
                 .addFilterBefore(
-                        jwtAuthenticationFilter,
+                        new JwtAuthenticationFilter(jwtService, customUserDetailsService),
                         UsernamePasswordAuthenticationFilter.class
                 );
 
@@ -62,7 +66,10 @@ public class SecurityConfig {
     ) throws Exception {
 
         http
-                .securityMatcher("/api/v1/payments/**")
+                .securityMatcher(
+                        "/api/v1/payments/**",
+                        "/api/v1/ledger/**"
+                )
 
                 .csrf(csrf -> csrf.disable())
 
@@ -78,7 +85,7 @@ public class SecurityConfig {
                 )
 
                 .addFilterBefore(
-                        apiKeyAuthenticationFilter,
+                        new ApiKeyAuthenticationFilter(apiKeyAuthenticationService),
                         UsernamePasswordAuthenticationFilter.class
                 );
 
@@ -105,7 +112,7 @@ public class SecurityConfig {
                 )
 
                 .addFilterBefore(
-                        jwtAuthenticationFilter,
+                        new JwtAuthenticationFilter(jwtService, customUserDetailsService),
                         UsernamePasswordAuthenticationFilter.class
                 );
 
