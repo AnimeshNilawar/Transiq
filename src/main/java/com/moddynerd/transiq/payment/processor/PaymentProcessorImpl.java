@@ -1,5 +1,7 @@
 package com.moddynerd.transiq.payment.processor;
 
+import com.moddynerd.transiq.event.payment.PaymentSucceededEvent;
+import com.moddynerd.transiq.event.publisher.DomainEventPublisher;
 import com.moddynerd.transiq.payment.attempt.entity.PaymentAttempt;
 import com.moddynerd.transiq.payment.attempt.service.PaymentAttemptService;
 import com.moddynerd.transiq.payment.authorization.AuthorizationDecision;
@@ -7,10 +9,6 @@ import com.moddynerd.transiq.payment.authorization.AuthorizationEngine;
 import com.moddynerd.transiq.payment.authorization.AuthorizationResult;
 import com.moddynerd.transiq.payment.entity.Payment;
 import com.moddynerd.transiq.payment.entity.PaymentStatus;
-import com.moddynerd.transiq.payment.financialEvent.entity.FinancialEvent;
-import com.moddynerd.transiq.payment.financialEvent.entity.FinancialEventType;
-import com.moddynerd.transiq.payment.financialEvent.service.FinancialEventService;
-import com.moddynerd.transiq.payment.ledger.service.LedgerService;
 import com.moddynerd.transiq.payment.repository.PaymentRepository;
 import com.moddynerd.transiq.payment.state.PaymentStateMachine;
 import lombok.RequiredArgsConstructor;
@@ -26,8 +24,7 @@ public class PaymentProcessorImpl implements PaymentProcessor {
     private final PaymentStateMachine paymentStateMachine;
     private final PaymentRepository paymentRepository;
     private final AuthorizationEngine authorizationEngine;
-    private final LedgerService ledgerService;
-    private final FinancialEventService financialEventService;
+    private final DomainEventPublisher domainEventPublisher;
 
     @Override
     public void process(Payment payment) {
@@ -56,16 +53,11 @@ public class PaymentProcessorImpl implements PaymentProcessor {
                     PaymentStatus.SUCCEEDED
             );
 
-            FinancialEvent event =
-                    financialEventService.create(
-                            FinancialEventType.PAYMENT,
-                            payment.getPaymentReference(),
-                            "Payment completed"
-                    );
-
-            ledgerService.recordSuccessfulPayment(
-                    event,
-                    payment
+            domainEventPublisher.publish(
+                    new PaymentSucceededEvent(
+                            payment.getId(),
+                            payment.getPaymentReference()
+                    )
             );
 
         } else {

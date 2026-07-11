@@ -1,12 +1,10 @@
 package com.moddynerd.transiq.payment.settlement.service;
 
 import com.moddynerd.transiq.auth.exception.ResourceNotFoundException;
+import com.moddynerd.transiq.event.publisher.DomainEventPublisher;
+import com.moddynerd.transiq.event.settlement.SettlementCompletedEvent;
 import com.moddynerd.transiq.merchant.entity.Merchant;
-import com.moddynerd.transiq.payment.financialEvent.entity.FinancialEvent;
-import com.moddynerd.transiq.payment.financialEvent.entity.FinancialEventType;
-import com.moddynerd.transiq.payment.financialEvent.service.FinancialEventService;
 import com.moddynerd.transiq.payment.ledger.dto.MerchantBalanceResponse;
-import com.moddynerd.transiq.payment.ledger.service.LedgerService;
 import com.moddynerd.transiq.payment.ledger.service.MerchantBalanceService;
 import com.moddynerd.transiq.payment.settlement.dto.CreateSettlementResponse;
 import com.moddynerd.transiq.payment.settlement.dto.SettlementResponse;
@@ -33,9 +31,8 @@ public class SettlementServiceImpl implements SettlementService{
     private final SettlementRepository settlementRepository;
     private final SettlementMapper settlementMapper;
     private final MerchantBalanceService merchantBalanceService;
-    private final LedgerService ledgerService;
     private final CurrentApiKeyService currentApiKeyService;
-    private final FinancialEventService financialEventService;
+    private final DomainEventPublisher domainEventPublisher;
 
     @Override
     @Transactional
@@ -66,16 +63,11 @@ public class SettlementServiceImpl implements SettlementService{
 
         settlementRepository.save(settlement);
 
-        FinancialEvent event =
-                financialEventService.create(
-                        FinancialEventType.SETTLEMENT,
-                        settlement.getSettlementReference(),
-                        "Merchant settlement"
-                );
-
-        ledgerService.recordSettlement(
-                event,
-                settlement
+        domainEventPublisher.publish(
+                new SettlementCompletedEvent(
+                        settlement.getId(),
+                        settlement.getSettlementReference()
+                )
         );
 
         settlement.setStatus(SettlementStatus.COMPLETED);

@@ -1,6 +1,8 @@
 package com.moddynerd.transiq.payment.refund.service;
 
 import com.moddynerd.transiq.auth.exception.ResourceNotFoundException;
+import com.moddynerd.transiq.event.publisher.DomainEventPublisher;
+import com.moddynerd.transiq.event.refund.RefundSucceededEvent;
 import com.moddynerd.transiq.merchant.entity.Merchant;
 import com.moddynerd.transiq.payment.entity.Payment;
 import com.moddynerd.transiq.payment.entity.PaymentStatus;
@@ -35,8 +37,7 @@ public class RefundServiceImpl implements RefundService{
     private final PaymentRepository paymentRepository;
     private final RefundMapper refundMapper;
     private final CurrentApiKeyService currentApiKeyService;
-    private final FinancialEventService financialEventService;
-    private final LedgerService ledgerService;
+    private final DomainEventPublisher domainEventPublisher;
 
     @Override
     public CreateRefundResponse createRefund(String paymentReference, String idempotencyKey, CreateRefundRequest request) {
@@ -66,10 +67,6 @@ public class RefundServiceImpl implements RefundService{
             );
         }
 
-        if(request.amount().compareTo(remaining) > 0){
-            throw new ConflictException("Refund amount exceeds remaining refundable balance.");
-        }
-
         // Generate Refund reference
         String reference;
 
@@ -94,15 +91,12 @@ public class RefundServiceImpl implements RefundService{
 
         refundRepository.save(refund);
 
-        // Financial Event
-        FinancialEvent event = financialEventService.create(
-                FinancialEventType.REFUND,
-                refund.getRefundReference(),
-                "Refund issued"
+        domainEventPublisher.publish(
+                new RefundSucceededEvent(
+                        refund.getId(),
+                        refund.getRefundReference()
+                )
         );
-
-        // Ledger
-        ledgerService.recordRefund(event, refund);
 
         // Update payment
         payment.setRefundedAmount( payment.getRefundedAmount() + refund.getAmount() );
