@@ -55,8 +55,10 @@ public class PaymentProcessorImpl implements PaymentProcessor {
 
             domainEventPublisher.publish(
                     new PaymentSucceededEvent(
+                            payment.getMerchant().getId(),
                             payment.getId(),
                             payment.getPaymentReference()
+
                     )
             );
 

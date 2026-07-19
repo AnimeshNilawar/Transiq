@@ -70,7 +70,8 @@ public class SecurityConfig {
                         "/api/v1/payments/**",
                         "/api/v1/ledger/**",
                         "/api/v1/settlements/**",
-                        "/api/v1/refunds/**"
+                        "/api/v1/refunds/**",
+                        "/api/v1/webhooks/**"
                 )
 
                 .csrf(csrf -> csrf.disable())

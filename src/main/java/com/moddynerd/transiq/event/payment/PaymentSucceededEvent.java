@@ -9,15 +9,17 @@ public record PaymentSucceededEvent(
         UUID eventId,
         Instant occurredAt,
         UUID paymentId,
-        String paymentReference
+        String paymentReference,
+        UUID merchantId
 ) implements DomainEvent {
 
-    public PaymentSucceededEvent(UUID paymentId, String paymentReference){
+    public PaymentSucceededEvent(UUID merchantId, UUID paymentId, String paymentReference){
         this(
                 UUID.randomUUID(),
                 Instant.now(),
                 paymentId,
-                paymentReference
+                paymentReference,
+                merchantId
         );
     }
 
