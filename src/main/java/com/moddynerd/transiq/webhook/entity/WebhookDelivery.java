@@ -5,7 +5,6 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.Instant;
-import java.util.UUID;
 
 @Entity
 @Table(name = "webhook_deliveries")
@@ -20,15 +19,9 @@ public class WebhookDelivery extends BaseEntity {
     @JoinColumn(nullable = false)
     private WebhookEndpoint endpoint;
 
-    @Column(nullable = false)
-    private UUID eventId;
-
-    @Column(nullable = false)
-    private String eventReference;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private WebhookEventType eventType;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "event_id", nullable = false)
+    private WebhookEvent event;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -41,9 +34,6 @@ public class WebhookDelivery extends BaseEntity {
     private Long durationMs;
 
     @Column(columnDefinition = "TEXT")
-    private String requestBody;
-
-    @Column(columnDefinition = "TEXT")
     private String responseBody;
 
     @Column
@@ -51,7 +41,7 @@ public class WebhookDelivery extends BaseEntity {
 
     @Column(nullable = false)
     @Builder.Default
-    private Integer attemptCount = 1;
+    private Integer attemptCount = 0;
 
     @Column
     private Instant lastAttemptAt;

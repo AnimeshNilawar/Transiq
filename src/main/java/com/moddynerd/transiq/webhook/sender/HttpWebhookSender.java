@@ -24,7 +24,7 @@ public class HttpWebhookSender implements WebhookSender {
     public ResponseEntity<?> send(WebhookDelivery delivery) {
 
         WebhookEndpoint endpoint = delivery.getEndpoint();
-        String payloadJson = delivery.getRequestBody();
+        String payloadJson = delivery.getEvent().getPayload();
 
         long timestamp = Instant.now().getEpochSecond();
 

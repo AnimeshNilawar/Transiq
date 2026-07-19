@@ -7,8 +7,6 @@ import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 
-import org.springframework.stereotype.Service;
-
 @Service
 public class HmacWebhookSigner
         implements WebhookSigner {

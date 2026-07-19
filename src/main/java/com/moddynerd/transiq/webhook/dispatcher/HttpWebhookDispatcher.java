@@ -1,65 +1,66 @@
 package com.moddynerd.transiq.webhook.dispatcher;
 
 import com.moddynerd.transiq.webhook.dto.WebhookPayload;
-import com.moddynerd.transiq.webhook.entity.*;
+import com.moddynerd.transiq.webhook.entity.WebhookDelivery;
+import com.moddynerd.transiq.webhook.entity.WebhookEndpoint;
+import com.moddynerd.transiq.webhook.entity.WebhookEvent;
+import com.moddynerd.transiq.webhook.entity.WebhookStatus;
 import com.moddynerd.transiq.webhook.repository.WebhookEndpointRepository;
-import com.moddynerd.transiq.webhook.sender.WebhookSender;
+import com.moddynerd.transiq.webhook.service.WebhookDeliveryExecutor;
 import com.moddynerd.transiq.webhook.service.WebhookDeliveryService;
+import com.moddynerd.transiq.webhook.service.WebhookEventService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import tools.jackson.databind.ObjectMapper;
 
 import java.util.List;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
-public class HttpWebhookDispatcher
-        implements WebhookDispatcher {
+@Slf4j
+public class HttpWebhookDispatcher implements WebhookDispatcher {
 
-    private final WebhookEndpointRepository repository;
+    private final WebhookEndpointRepository endpointRepository;
+    private final WebhookEventService eventService;
     private final WebhookDeliveryService deliveryService;
-    private final ObjectMapper objectMapper;
-    private final WebhookSender webhookSender;
+    private final WebhookDeliveryExecutor executor;
 
     @Override
-    public void dispatch(WebhookPayload payload, UUID merchantId) {
+    public void dispatch(
+            WebhookPayload payload,
+            UUID merchantId
+    ) {
 
-        List<WebhookEndpoint> endpoints = repository.findAllByMerchant_IdAndStatus(merchantId, WebhookStatus.ACTIVE);
+        WebhookEvent event =
+                eventService.createEvent(payload, merchantId);
+
+        List<WebhookEndpoint> endpoints =
+                endpointRepository.findAllByMerchant_IdAndStatus(
+                        merchantId,
+                        WebhookStatus.ACTIVE
+                );
 
         for (WebhookEndpoint endpoint : endpoints) {
 
-            long start = System.currentTimeMillis();
-            WebhookDelivery delivery = null;
-
             try {
 
-                String payloadJson = objectMapper.writeValueAsString(payload);
+                WebhookDelivery delivery =
+                        deliveryService.createDelivery(endpoint, event);
 
-                delivery = deliveryService.createDelivery(endpoint, payload, payloadJson);
-
-                ResponseEntity<?> response =
-                        webhookSender.send(delivery);
-
-                deliveryService.markDelivered(
-                        delivery,
-                        response,
-                        System.currentTimeMillis() - start
-                );
+                executor.execute(delivery);
 
             } catch (Exception ex) {
 
-                if (delivery != null) {
-                    deliveryService.handleDeliveryFailure(delivery, ex, System.currentTimeMillis() - start);
-                }
+                log.error(
+                        "Failed to create webhook delivery for endpoint {}",
+                        endpoint.getId(),
+                        ex
+                );
 
             }
 
         }
     }
 
-
-
 }
-
