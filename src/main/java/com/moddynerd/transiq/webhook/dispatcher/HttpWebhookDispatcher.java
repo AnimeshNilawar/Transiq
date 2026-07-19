@@ -3,11 +3,12 @@ package com.moddynerd.transiq.webhook.dispatcher;
 import com.moddynerd.transiq.webhook.dto.WebhookPayload;
 import com.moddynerd.transiq.webhook.entity.*;
 import com.moddynerd.transiq.webhook.repository.WebhookEndpointRepository;
+import com.moddynerd.transiq.webhook.sender.WebhookSender;
 import com.moddynerd.transiq.webhook.service.WebhookDeliveryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestClient;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.List;
 import java.util.UUID;
@@ -17,28 +18,29 @@ import java.util.UUID;
 public class HttpWebhookDispatcher
         implements WebhookDispatcher {
 
-    private final RestClient restClient;
     private final WebhookEndpointRepository repository;
     private final WebhookDeliveryService deliveryService;
+    private final ObjectMapper objectMapper;
+    private final WebhookSender webhookSender;
 
     @Override
     public void dispatch(WebhookPayload payload, UUID merchantId) {
+
         List<WebhookEndpoint> endpoints = repository.findAllByMerchant_IdAndStatus(merchantId, WebhookStatus.ACTIVE);
 
         for (WebhookEndpoint endpoint : endpoints) {
 
-            WebhookDelivery delivery = deliveryService.createDelivery(endpoint, payload);
-
             long start = System.currentTimeMillis();
+            WebhookDelivery delivery = null;
 
             try {
 
-                ResponseEntity<Void> response =
-                        restClient.post()
-                                .uri(endpoint.getUrl())
-                                .body(payload)
-                                .retrieve()
-                                .toBodilessEntity();
+                String payloadJson = objectMapper.writeValueAsString(payload);
+
+                delivery = deliveryService.createDelivery(endpoint, payload, payloadJson);
+
+                ResponseEntity<?> response =
+                        webhookSender.send(delivery);
 
                 deliveryService.markDelivered(
                         delivery,
@@ -48,11 +50,9 @@ public class HttpWebhookDispatcher
 
             } catch (Exception ex) {
 
-                deliveryService.markFailed(
-                        delivery,
-                        ex,
-                        System.currentTimeMillis() - start
-                );
+                if (delivery != null) {
+                    deliveryService.handleDeliveryFailure(delivery, ex, System.currentTimeMillis() - start);
+                }
 
             }
 

@@ -25,7 +25,7 @@ public class WebhookEndpoint extends BaseEntity {
     private Integer version;
 
     @Column(nullable = false)
-    private String secretHash;
+    private String encryptedSecret;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

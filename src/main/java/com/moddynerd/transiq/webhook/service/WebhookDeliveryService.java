@@ -9,7 +9,8 @@ public interface WebhookDeliveryService {
 
     WebhookDelivery createDelivery(
             WebhookEndpoint endpoint,
-            WebhookPayload payload
+            WebhookPayload payload,
+            String payloadJson
     );
 
     void markDelivered(
@@ -19,6 +20,12 @@ public interface WebhookDeliveryService {
     );
 
     void markFailed(
+            WebhookDelivery delivery,
+            Exception exception,
+            long duration
+    );
+
+    void handleDeliveryFailure(
             WebhookDelivery delivery,
             Exception exception,
             long duration

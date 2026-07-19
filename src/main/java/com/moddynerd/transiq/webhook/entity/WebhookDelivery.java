@@ -38,18 +38,28 @@ public class WebhookDelivery extends BaseEntity {
     private Integer httpStatus;
 
     @Column
-    private Integer attemptCount;
-
-    @Column
     private Long durationMs;
 
-    @Lob
+    @Column(columnDefinition = "TEXT")
     private String requestBody;
 
-    @Lob
+    @Column(columnDefinition = "TEXT")
     private String responseBody;
 
     @Column
     private Instant deliveredAt;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private Integer attemptCount = 1;
+
+    @Column
+    private Instant lastAttemptAt;
+
+    @Column
+    private Instant nextRetryAt;
+
+    @Column(length = 1024)
+    private String failureReason;
 
 }

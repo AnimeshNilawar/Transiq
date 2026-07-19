@@ -3,6 +3,7 @@ package com.moddynerd.transiq.webhook.service;
 import com.moddynerd.transiq.auth.exception.ResourceNotFoundException;
 import com.moddynerd.transiq.merchant.entity.Merchant;
 import com.moddynerd.transiq.shared.security.CurrentApiKeyService;
+import com.moddynerd.transiq.shared.security.SecretEncryptionService;
 import com.moddynerd.transiq.shared.util.WebhookSecretGenerator;
 import com.moddynerd.transiq.webhook.dto.CreateWebhookRequest;
 import com.moddynerd.transiq.webhook.dto.CreateWebhookResponse;
@@ -24,7 +25,7 @@ public class WebhookServiceImpl implements WebhookService {
 
     private final WebhookEndpointRepository repository;
     private final WebhookMapper mapper;
-    private final PasswordEncoder passwordEncoder;
+    private final SecretEncryptionService encryptionService;
     private final CurrentApiKeyService currentApiKeyService;
 
     @Override
@@ -32,13 +33,13 @@ public class WebhookServiceImpl implements WebhookService {
         Merchant merchant = currentApiKeyService.getCurrentPrincipal().merchant();
 
         String secret = WebhookSecretGenerator.generate();
-        String hash = passwordEncoder.encode(secret);
+        String encryptedSecret = encryptionService.encrypt(secret);
 
         WebhookEndpoint endpoint =
                 WebhookEndpoint.builder()
                         .merchant(merchant)
                         .url(request.url())
-                        .secretHash(hash)
+                        .encryptedSecret(encryptedSecret)
                         .status(WebhookStatus.ACTIVE)
                         .version(1)
                         .build();

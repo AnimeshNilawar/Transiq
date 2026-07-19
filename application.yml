@@ -1,0 +1,3 @@
+transiq:
+  security:
+    encryption-key: ${ENCRYPTION_KEY}

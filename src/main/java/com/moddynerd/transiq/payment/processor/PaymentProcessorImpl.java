@@ -53,15 +53,6 @@ public class PaymentProcessorImpl implements PaymentProcessor {
                     PaymentStatus.SUCCEEDED
             );
 
-            domainEventPublisher.publish(
-                    new PaymentSucceededEvent(
-                            payment.getMerchant().getId(),
-                            payment.getId(),
-                            payment.getPaymentReference()
-
-                    )
-            );
-
         } else {
 
             paymentAttemptService.markFailed(
@@ -77,5 +68,15 @@ public class PaymentProcessorImpl implements PaymentProcessor {
         }
 
         paymentRepository.save(payment);
+
+        if (payment.getStatus() == PaymentStatus.SUCCEEDED) {
+            domainEventPublisher.publish(
+                    new PaymentSucceededEvent(
+                            payment.getMerchant().getId(),
+                            payment.getId(),
+                            payment.getPaymentReference()
+                    )
+            );
+        }
     }
 }

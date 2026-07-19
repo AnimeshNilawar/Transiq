@@ -3,6 +3,7 @@ package com.moddynerd.transiq.shared.exception;
 import com.moddynerd.transiq.auth.exception.BadRequestException;
 import com.moddynerd.transiq.auth.exception.ResourceNotFoundException;
 import com.moddynerd.transiq.merchant.exception.MerchantAlreadyExistsException;
+import com.moddynerd.transiq.webhook.exception.WebhookSignatureException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -131,6 +132,42 @@ public class GlobalExceptionHandler {
         );
 
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(response);
+    }
+
+    @ExceptionHandler(EncryptionException.class)
+    public ResponseEntity<ErrorResponse> handleEncryptionException(
+            EncryptionException ex,
+            HttpServletRequest request
+    ) {
+
+        ErrorResponse response = new ErrorResponse(
+                Instant.now(),
+                HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase(),
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(response);
+    }
+
+    @ExceptionHandler(WebhookSignatureException.class)
+    public ResponseEntity<ErrorResponse> handleWebhookSignatureException(
+            WebhookSignatureException ex,
+            HttpServletRequest request
+    ) {
+
+        ErrorResponse response = new ErrorResponse(
+                Instant.now(),
+                HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase(),
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(response);
     }
 }
