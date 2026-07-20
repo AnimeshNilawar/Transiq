@@ -6,12 +6,14 @@ import com.moddynerd.transiq.payment.dto.ConfirmPaymentRequest;
 import com.moddynerd.transiq.payment.dto.CreatePaymentRequest;
 import com.moddynerd.transiq.payment.dto.CreatePaymentResponse;
 import com.moddynerd.transiq.payment.dto.PaymentResponse;
+import com.moddynerd.transiq.payment.entity.CardPaymentDetails;
 import com.moddynerd.transiq.payment.entity.Payment;
 import com.moddynerd.transiq.payment.entity.PaymentMethodType;
 import com.moddynerd.transiq.payment.entity.PaymentStatus;
 import com.moddynerd.transiq.payment.expiration.PaymentExpirationService;
 import com.moddynerd.transiq.payment.mapper.PaymentMapper;
 import com.moddynerd.transiq.payment.processor.PaymentProcessor;
+import com.moddynerd.transiq.payment.repository.CardPaymentDetailsRepository;
 import com.moddynerd.transiq.payment.repository.PaymentRepository;
 import com.moddynerd.transiq.payment.security.ClientSecretService;
 import com.moddynerd.transiq.payment.state.PaymentStateMachine;
@@ -41,6 +43,7 @@ public class PaymentServiceImpl
     private final PaymentStateMachine paymentStateMachine;
     private final ClientSecretService clientSecretService;
     private final PaymentExpirationService paymentExpirationService;
+    private final CardPaymentDetailsRepository cardPaymentDetailsRepository;
 
     @Override
     public CreatePaymentResponse createPayment(
@@ -140,6 +143,22 @@ public class PaymentServiceImpl
         payment.setPaymentMethodType(request.paymentMethodType());
 
         paymentRepository.save(payment);
+
+        if (request.paymentMethodType() == PaymentMethodType.CARD
+                && request.cardNetwork() != null
+                && request.issuerBank() != null) {
+
+            CardPaymentDetails details = CardPaymentDetails.builder()
+                    .payment(payment)
+                    .cardNetwork(request.cardNetwork())
+                    .issuerBank(request.issuerBank())
+                    .maskedCardNumber(request.maskedCardNumber())
+                    .expiryMonth(request.expiryMonth())
+                    .expiryYear(request.expiryYear())
+                    .build();
+
+            cardPaymentDetailsRepository.save(details);
+        }
 
         paymentProcessor.process(payment);
 

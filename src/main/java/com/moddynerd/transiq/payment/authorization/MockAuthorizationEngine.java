@@ -2,11 +2,9 @@ package com.moddynerd.transiq.payment.authorization;
 
 import com.moddynerd.transiq.payment.attempt.entity.FailureCode;
 import com.moddynerd.transiq.payment.entity.Payment;
-import org.springframework.stereotype.Component;
 
 import java.security.SecureRandom;
 
-@Component
 public class MockAuthorizationEngine implements AuthorizationEngine{
 
     private final SecureRandom random = new SecureRandom();

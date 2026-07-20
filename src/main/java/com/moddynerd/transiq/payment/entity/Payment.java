@@ -65,4 +65,7 @@ public class Payment extends BaseEntity {
 
     @Lob
     private String metadata;
+
+    @OneToOne(mappedBy = "payment", fetch = FetchType.LAZY)
+    private CardPaymentDetails cardPaymentDetails;
 }
