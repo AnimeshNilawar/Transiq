@@ -3,6 +3,8 @@ package com.moddynerd.transiq.payment.refund.repository;
 import com.moddynerd.transiq.merchant.entity.Merchant;
 import com.moddynerd.transiq.payment.entity.Payment;
 import com.moddynerd.transiq.payment.refund.entity.Refund;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
@@ -27,4 +29,6 @@ public interface RefundRepository
             Payment payment,
             String idempotencyKey
     );
+
+    Page<Refund> findAllByOrderByCreatedAtDesc(Pageable pageable);
 }

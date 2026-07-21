@@ -10,9 +10,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
+
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class ApiKeyAuthenticationServiceImpl
         implements ApiKeyAuthenticationService {
 
@@ -20,6 +21,7 @@ public class ApiKeyAuthenticationServiceImpl
     private final PasswordEncoder passwordEncoder;
 
     @Override
+    @Transactional
     public ApiKeyPrincipal authenticate(String apiKey) {
 
         if (apiKey == null || apiKey.isBlank()) {
@@ -40,6 +42,9 @@ public class ApiKeyAuthenticationServiceImpl
         if (!passwordEncoder.matches(apiKey, storedKey.getKeyHash())) {
             throw new BadCredentialsException("Invalid API Key");
         }
+
+        storedKey.setLastUsedAt(Instant.now());
+        apiKeyRepository.save(storedKey);
 
         storedKey.getMerchant().getBusinessName();
 

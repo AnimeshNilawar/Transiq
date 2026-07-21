@@ -23,6 +23,7 @@ public class WebhookEventServiceImpl implements WebhookEventService {
     private final ObjectMapper objectMapper;
 
     @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public WebhookEvent createEvent(
             WebhookPayload payload,
             UUID merchantId

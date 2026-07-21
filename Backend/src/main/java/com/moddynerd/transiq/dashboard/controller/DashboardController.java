@@ -9,8 +9,11 @@ import com.moddynerd.transiq.dashboard.service.DashboardService;
 import com.moddynerd.transiq.payment.entity.PaymentStatus;
 import com.moddynerd.transiq.payment.ledger.dto.MerchantBalanceResponse;
 import com.moddynerd.transiq.payment.ledger.entity.LedgerAccount;
+import com.moddynerd.transiq.payment.refund.dto.CreateRefundRequest;
+import com.moddynerd.transiq.payment.refund.dto.CreateRefundResponse;
 import com.moddynerd.transiq.payment.refund.dto.RefundResponse;
 import com.moddynerd.transiq.payment.refund.entity.RefundStatus;
+import com.moddynerd.transiq.payment.settlement.dto.CreateSettlementResponse;
 import com.moddynerd.transiq.payment.settlement.dto.SettlementResponse;
 import com.moddynerd.transiq.payment.settlement.entity.SettlementStatus;
 import com.moddynerd.transiq.webhook.dto.CreateWebhookRequest;
@@ -237,9 +240,31 @@ public class DashboardController {
         );
     }
 
+    @PostMapping("/refunds")
+    @ResponseStatus(HttpStatus.CREATED)
+    public CreateRefundResponse createRefund(
+            @Valid @RequestBody CreateRefundRequest request,
+            @RequestParam String paymentReference
+    ) {
+        return dashboardService.createRefund(request, paymentReference);
+    }
+
+    @PostMapping("/settlements")
+    @ResponseStatus(HttpStatus.CREATED)
+    public CreateSettlementResponse createSettlement() {
+        return dashboardService.createSettlement();
+    }
+
+    private static final java.util.Set<String> ALLOWED_SORT_PROPERTIES = java.util.Set.of(
+            "createdAt", "updatedAt", "amount", "status", "id"
+    );
+
     private Pageable parsePageable(int page, int size, String sort) {
         String[] parts = sort.split(",");
         String property = parts[0];
+        if (!ALLOWED_SORT_PROPERTIES.contains(property)) {
+            property = "createdAt";
+        }
         Sort.Direction direction = parts.length > 1
                 && parts[1].equalsIgnoreCase("asc")
                 ? Sort.Direction.ASC

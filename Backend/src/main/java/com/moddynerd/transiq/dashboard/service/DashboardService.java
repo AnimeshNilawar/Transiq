@@ -6,8 +6,11 @@ import com.moddynerd.transiq.dashboard.dto.DashboardPaymentDetailResponse;
 import com.moddynerd.transiq.payment.entity.PaymentStatus;
 import com.moddynerd.transiq.payment.ledger.dto.MerchantBalanceResponse;
 import com.moddynerd.transiq.payment.ledger.entity.LedgerAccount;
+import com.moddynerd.transiq.payment.refund.dto.CreateRefundRequest;
+import com.moddynerd.transiq.payment.refund.dto.CreateRefundResponse;
 import com.moddynerd.transiq.payment.refund.dto.RefundResponse;
 import com.moddynerd.transiq.payment.refund.entity.RefundStatus;
+import com.moddynerd.transiq.payment.settlement.dto.CreateSettlementResponse;
 import com.moddynerd.transiq.payment.settlement.dto.SettlementResponse;
 import com.moddynerd.transiq.payment.settlement.entity.SettlementStatus;
 import com.moddynerd.transiq.webhook.dto.CreateWebhookRequest;
@@ -86,4 +89,8 @@ public interface DashboardService {
     void retryWebhookDelivery(UUID deliveryId);
 
     DashboardPaymentDetailResponse retryPayment(String paymentReference);
+
+    CreateRefundResponse createRefund(CreateRefundRequest request, String paymentReference);
+
+    CreateSettlementResponse createSettlement();
 }

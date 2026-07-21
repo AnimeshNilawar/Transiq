@@ -6,10 +6,6 @@ import com.moddynerd.transiq.event.refund.RefundSucceededEvent;
 import com.moddynerd.transiq.merchant.entity.Merchant;
 import com.moddynerd.transiq.payment.entity.Payment;
 import com.moddynerd.transiq.payment.entity.PaymentStatus;
-import com.moddynerd.transiq.payment.financialEvent.entity.FinancialEvent;
-import com.moddynerd.transiq.payment.financialEvent.entity.FinancialEventType;
-import com.moddynerd.transiq.payment.financialEvent.service.FinancialEventService;
-import com.moddynerd.transiq.payment.ledger.service.LedgerService;
 import com.moddynerd.transiq.payment.refund.dto.CreateRefundRequest;
 import com.moddynerd.transiq.payment.refund.dto.CreateRefundResponse;
 import com.moddynerd.transiq.payment.refund.dto.RefundResponse;
@@ -42,7 +38,11 @@ public class RefundServiceImpl implements RefundService{
     @Override
     public CreateRefundResponse createRefund(String paymentReference, String idempotencyKey, CreateRefundRequest request) {
         Merchant merchant = currentApiKeyService.getCurrentPrincipal().merchant();
+        return createRefundForMerchant(merchant, paymentReference, idempotencyKey, request);
+    }
 
+    @Override
+    public CreateRefundResponse createRefundForMerchant(Merchant merchant, String paymentReference, String idempotencyKey, CreateRefundRequest request) {
         Payment payment = paymentRepository.findByMerchantAndPaymentReference(merchant, paymentReference)
                 .orElseThrow(() -> new ResourceNotFoundException("Payment not found"));
 
@@ -67,7 +67,6 @@ public class RefundServiceImpl implements RefundService{
             );
         }
 
-        // Generate Refund reference
         String reference;
 
         do{
@@ -78,7 +77,6 @@ public class RefundServiceImpl implements RefundService{
                         .isPresent()
         );
 
-        //Create Refund
         Refund refund = Refund.builder()
                 .payment(payment)
                 .merchant(merchant)
@@ -93,12 +91,12 @@ public class RefundServiceImpl implements RefundService{
 
         domainEventPublisher.publish(
                 new RefundSucceededEvent(
+                        merchant.getId(),
                         refund.getId(),
                         refund.getRefundReference()
                 )
         );
 
-        // Update payment
         payment.setRefundedAmount( payment.getRefundedAmount() + refund.getAmount() );
 
         if(payment.getRefundedAmount().compareTo(payment.getAmount()) == 0){

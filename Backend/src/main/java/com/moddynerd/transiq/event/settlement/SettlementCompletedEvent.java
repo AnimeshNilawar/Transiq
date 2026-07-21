@@ -10,11 +10,13 @@ public record SettlementCompletedEvent(
         UUID eventId,
         Instant occurredAt,
         UUID settlementId,
-        String settlementReference
+        String settlementReference,
+        UUID merchantId
 
 ) implements DomainEvent {
 
     public SettlementCompletedEvent(
+            UUID merchantId,
             UUID settlementId,
             String settlementReference
     ) {
@@ -22,7 +24,8 @@ public record SettlementCompletedEvent(
                 UUID.randomUUID(),
                 Instant.now(),
                 settlementId,
-                settlementReference
+                settlementReference,
+                merchantId
         );
     }
 }

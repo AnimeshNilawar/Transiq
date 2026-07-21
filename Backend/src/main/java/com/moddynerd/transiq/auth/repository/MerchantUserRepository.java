@@ -2,6 +2,8 @@ package com.moddynerd.transiq.auth.repository;
 
 import com.moddynerd.transiq.auth.entity.MerchantUser;
 import com.moddynerd.transiq.merchant.entity.Merchant;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -19,4 +21,6 @@ public interface MerchantUserRepository extends JpaRepository<MerchantUser, UUID
     boolean existsByEmail(String email);
 
     List<MerchantUser> findByMerchantOrderByCreatedAtAsc(Merchant merchant);
+
+    Page<MerchantUser> findAllByOrderByCreatedAtDesc(Pageable pageable);
 }

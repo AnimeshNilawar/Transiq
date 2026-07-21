@@ -30,7 +30,7 @@ export function TableSkeleton({ rows = 5, columns = 4 }) {
 
 export function CardSkeleton() {
   return (
-    <div className="rounded-lg border p-6 space-y-4">
+    <div className="bg-card rounded-lg border border-border p-6 space-y-4">
       <Skeleton className="h-4 w-1/3" />
       <Skeleton className="h-8 w-1/2" />
       <Skeleton className="h-4 w-2/3" />
@@ -42,13 +42,15 @@ export function DetailSkeleton() {
   return (
     <div className="space-y-6">
       <Skeleton className="h-8 w-1/4" />
-      <div className="grid grid-cols-2 gap-4">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="space-y-2">
-            <Skeleton className="h-4 w-1/3" />
-            <Skeleton className="h-6 w-1/2" />
-          </div>
-        ))}
+      <div className="bg-card rounded-lg border border-border p-6 space-y-4">
+        <div className="grid grid-cols-2 gap-4">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="space-y-2">
+              <Skeleton className="h-4 w-1/3" />
+              <Skeleton className="h-6 w-1/2" />
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   )

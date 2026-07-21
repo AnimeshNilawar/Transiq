@@ -1,5 +1,6 @@
-import { useQuery } from '@tanstack/react-query'
-import { getSettlements, getSettlement } from '@/api/settlements'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { getSettlements, getSettlement, createDashboardSettlement } from '@/api/settlements'
+import { toast } from 'sonner'
 
 /**
  * Query hook to fetch paginated settlements
@@ -22,5 +23,21 @@ export function useSettlement(settlementReference, enabled = true) {
     queryKey: ['settlements', settlementReference],
     queryFn: () => getSettlement(settlementReference).then((res) => res.data),
     enabled: enabled && !!settlementReference,
+  })
+}
+
+/**
+ * Mutation hook to create a settlement from the dashboard (JWT auth)
+ */
+export function useDashboardCreateSettlement() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () => createDashboardSettlement(),
+    onSuccess: (response) => {
+      queryClient.invalidateQueries({ queryKey: ['settlements'] })
+      queryClient.invalidateQueries({ queryKey: ['ledger'] })
+      toast.success('Settlement created')
+      return response.data
+    },
   })
 }

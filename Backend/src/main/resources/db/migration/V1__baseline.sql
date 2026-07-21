@@ -1,0 +1,4 @@
+-- V1: Flyway baseline migration
+-- Flyway is enabled for future schema migrations.
+-- Current schema is managed by JPA auto-DDL (spring.jpa.hibernate.ddl-auto=update).
+-- This migration exists to initialize Flyway's schema_history table.

@@ -32,6 +32,7 @@ public class PaymentEventListener {
 
         FinancialEvent financialEvent =
                 financialEventService.create(
+                        payment.getMerchant(),
                         FinancialEventType.PAYMENT,
                         payment.getPaymentReference(),
                         "Payment completed"

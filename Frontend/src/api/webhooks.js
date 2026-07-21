@@ -42,10 +42,10 @@ export function createWebhook(data) {
 }
 
 /**
- * Delete (disable) a webhook endpoint (API key auth)
+ * Delete (disable) a webhook endpoint (dashboard, JWT auth)
  * @param {string} id - Webhook endpoint ID
  * @returns {Promise<import('axios').AxiosResponse>}
  */
 export function deleteWebhook(id) {
-  return apiKeyClient.delete(`/webhooks/${id}`)
+  return jwtClient.delete(`/dashboard/webhooks/${id}`)
 }

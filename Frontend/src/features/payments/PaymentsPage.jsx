@@ -3,11 +3,13 @@ import { useNavigate } from 'react-router-dom'
 import { usePayments } from '@/hooks/usePayments'
 import { StatusBadge } from '@/components/shared/StatusBadge'
 import { TableSkeleton } from '@/components/shared/LoadingSkeleton'
+import { Pagination } from '@/components/shared/Pagination'
 import { formatAmount } from '@/lib/utils'
+import { exportToCSV } from '@/lib/export'
 import { format } from 'date-fns'
-import { Search } from 'lucide-react'
+import { Search, Download } from 'lucide-react'
 
-export function PaymentsPage() {
+export default function PaymentsPage() {
   const navigate = useNavigate()
   const [searchRef, setSearchRef] = useState('')
   const [filters, setFilters] = useState({
@@ -44,12 +46,12 @@ export function PaymentsPage() {
     {
       key: 'orderId',
       header: 'Order ID',
-      render: (val) => val || '-',
+      render: (val) => <span className="font-mono text-xs">{val || '-'}</span>,
     },
     {
       key: 'amount',
       header: 'Amount',
-      render: (val, row) => formatAmount(val, row.currency),
+      render: (val, row) => <span className="font-mono tabular-nums">{formatAmount(val, row.currency)}</span>,
     },
     {
       key: 'status',
@@ -71,7 +73,7 @@ export function PaymentsPage() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Payments</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">Payments</h1>
         <p className="text-sm text-muted-foreground">
           {data?.totalElements || 0} total payment{(data?.totalElements || 0) !== 1 ? 's' : ''}
         </p>
@@ -86,12 +88,12 @@ export function PaymentsPage() {
               value={searchRef}
               onChange={(e) => setSearchRef(e.target.value)}
               placeholder="Search by ref..."
-              className="rounded-md border pl-9 pr-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-ring w-48"
+              className="rounded-md border border-border bg-card pl-9 pr-3 py-1.5 text-sm text-card-foreground outline-none focus:ring-2 focus:ring-ring w-48"
             />
           </div>
           <button
             type="submit"
-            className="inline-flex items-center justify-center rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+            className="inline-flex items-center justify-center rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-accent-foreground hover:bg-accent/90 transition-colors"
           >
             Go
           </button>
@@ -102,7 +104,7 @@ export function PaymentsPage() {
           onChange={(e) =>
             setFilters((f) => ({ ...f, status: e.target.value, page: 0 }))
           }
-          className="rounded-md border px-3 py-1.5 text-sm"
+          className="rounded-md border border-border bg-card px-3 py-1.5 text-sm text-card-foreground"
         >
           <option value="">All Statuses</option>
           <option value="CREATED">Created</option>
@@ -122,15 +124,24 @@ export function PaymentsPage() {
             setFilters((f) => ({ ...f, orderId: e.target.value, page: 0 }))
           }
           placeholder="Filter by Order ID..."
-          className="rounded-md border px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-ring w-48"
+          className="rounded-md border border-border bg-card px-3 py-1.5 text-sm text-card-foreground outline-none focus:ring-2 focus:ring-ring w-48"
         />
+
+        <button
+          onClick={() => exportToCSV(data?.content || [], columns, 'payments')}
+          disabled={!data?.content?.length}
+          className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-1.5 text-sm text-card-foreground hover:bg-muted disabled:opacity-50 transition-colors"
+        >
+          <Download className="h-4 w-4" />
+          Export CSV
+        </button>
       </div>
 
       {isLoading ? (
         <TableSkeleton rows={5} columns={6} />
       ) : (
         <>
-          <div className="overflow-x-auto rounded-lg border">
+          <div className="overflow-x-auto rounded-lg border border-border">
             <table className="w-full caption-bottom text-sm">
               <thead className="[&_tr]:border-b">
                 <tr className="border-b transition-colors hover:bg-muted/50">
@@ -149,7 +160,7 @@ export function PaymentsPage() {
                     onClick={() => navigate(`/payments/${row.paymentReference}`)}
                   >
                     {columns.map((col) => (
-                      <td key={col.key} className="p-4 align-middle">
+                      <td key={col.key} className="p-4 align-middle text-card-foreground">
                         {col.render ? col.render(row[col.key], row) : row[col.key] ?? '-'}
                       </td>
                     ))}
@@ -159,29 +170,11 @@ export function PaymentsPage() {
             </table>
           </div>
 
-          {data?.totalPages > 1 && (
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">
-                Page {(data.page || 0) + 1} of {data.totalPages}
-              </p>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setFilters((f) => ({ ...f, page: Math.max(0, f.page - 1) }))}
-                  disabled={filters.page === 0}
-                  className="inline-flex items-center justify-center rounded-md border px-3 py-1.5 text-sm disabled:opacity-50 hover:bg-accent"
-                >
-                  Previous
-                </button>
-                <button
-                  onClick={() => setFilters((f) => ({ ...f, page: Math.min((data.totalPages || 1) - 1, f.page + 1) }))}
-                  disabled={filters.page >= (data.totalPages || 1) - 1}
-                  className="inline-flex items-center justify-center rounded-md border px-3 py-1.5 text-sm disabled:opacity-50 hover:bg-accent"
-                >
-                  Next
-                </button>
-              </div>
-            </div>
-          )}
+          <Pagination
+            page={filters.page}
+            totalPages={data?.totalPages || 1}
+            onPageChange={(p) => setFilters((f) => ({ ...f, page: p }))}
+          />
         </>
       )}
     </div>

@@ -24,6 +24,8 @@ public record ConfirmPaymentRequest(
         Integer expiryMonth,
 
         @Min(2024) @Max(2040)
-        Integer expiryYear
+        Integer expiryYear,
+
+        String upiId
 ) {
 }

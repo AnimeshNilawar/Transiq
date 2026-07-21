@@ -10,11 +10,13 @@ import com.moddynerd.transiq.payment.entity.CardPaymentDetails;
 import com.moddynerd.transiq.payment.entity.Payment;
 import com.moddynerd.transiq.payment.entity.PaymentMethodType;
 import com.moddynerd.transiq.payment.entity.PaymentStatus;
+import com.moddynerd.transiq.payment.entity.UpiPaymentDetails;
 import com.moddynerd.transiq.payment.expiration.PaymentExpirationService;
 import com.moddynerd.transiq.payment.mapper.PaymentMapper;
 import com.moddynerd.transiq.payment.processor.PaymentProcessor;
 import com.moddynerd.transiq.payment.repository.CardPaymentDetailsRepository;
 import com.moddynerd.transiq.payment.repository.PaymentRepository;
+import com.moddynerd.transiq.payment.repository.UpiPaymentDetailsRepository;
 import com.moddynerd.transiq.payment.security.ClientSecretService;
 import com.moddynerd.transiq.payment.state.PaymentStateMachine;
 import com.moddynerd.transiq.shared.exception.ConflictException;
@@ -44,6 +46,7 @@ public class PaymentServiceImpl
     private final ClientSecretService clientSecretService;
     private final PaymentExpirationService paymentExpirationService;
     private final CardPaymentDetailsRepository cardPaymentDetailsRepository;
+    private final UpiPaymentDetailsRepository upiPaymentDetailsRepository;
 
     @Override
     public CreatePaymentResponse createPayment(
@@ -158,6 +161,17 @@ public class PaymentServiceImpl
                     .build();
 
             cardPaymentDetailsRepository.save(details);
+        }
+
+        if (request.paymentMethodType() == PaymentMethodType.UPI
+                && request.upiId() != null) {
+
+            UpiPaymentDetails details = UpiPaymentDetails.builder()
+                    .payment(payment)
+                    .upiId(request.upiId())
+                    .build();
+
+            upiPaymentDetailsRepository.save(details);
         }
 
         paymentProcessor.process(payment);

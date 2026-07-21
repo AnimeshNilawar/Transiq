@@ -26,6 +26,14 @@ public class PaymentMapper {
             Payment payment
     ) {
 
+        PaymentResponse.UpiPaymentDetailResponse upiDetails = null;
+        if (payment.getUpiPaymentDetails() != null) {
+            upiDetails = new PaymentResponse.UpiPaymentDetailResponse(
+                    payment.getUpiPaymentDetails().getUpiId(),
+                    payment.getUpiPaymentDetails().getUpiTransactionReference()
+            );
+        }
+
         return new PaymentResponse(
                 payment.getId(),
                 payment.getPaymentReference(),
@@ -34,7 +42,9 @@ public class PaymentMapper {
                 payment.getStatus(),
                 payment.getCustomerEmail(),
                 payment.getOrderId(),
-                payment.getCreatedAt()
+                payment.getCreatedAt(),
+                payment.getPaymentMethodType(),
+                upiDetails
         );
     }
 

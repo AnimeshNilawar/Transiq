@@ -30,9 +30,13 @@ public record DashboardPaymentDetailResponse(
 
         String description,
 
+        Long refundedAmount,
+
         Instant createdAt,
 
         DashboardCardDetailsInfo cardDetails,
+
+        DashboardUpiDetailsInfo upiDetails,
 
         List<DashboardPaymentAttemptInfo> attempts
 
@@ -55,6 +59,14 @@ public record DashboardPaymentDetailResponse(
             String gatewayResponseCode,
 
             String gatewayMessage
+
+    ) {}
+
+    public record DashboardUpiDetailsInfo(
+
+            String upiId,
+
+            String upiTransactionReference
 
     ) {}
 

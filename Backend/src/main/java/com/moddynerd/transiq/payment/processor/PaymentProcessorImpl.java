@@ -9,7 +9,9 @@ import com.moddynerd.transiq.payment.authorization.AuthorizationDecision;
 import com.moddynerd.transiq.payment.authorization.AuthorizationResult;
 import com.moddynerd.transiq.payment.entity.CardPaymentDetails;
 import com.moddynerd.transiq.payment.entity.Payment;
+import com.moddynerd.transiq.payment.entity.PaymentMethodType;
 import com.moddynerd.transiq.payment.entity.PaymentStatus;
+import com.moddynerd.transiq.payment.entity.UpiPaymentDetails;
 import com.moddynerd.transiq.payment.gateway.authorization.GatewayAuthorizationService;
 import com.moddynerd.transiq.payment.gateway.bin.BinRecord;
 import com.moddynerd.transiq.payment.gateway.bin.BinResolver;
@@ -17,14 +19,17 @@ import com.moddynerd.transiq.payment.gateway.card.Card;
 import com.moddynerd.transiq.payment.gateway.metadata.CardMetadata;
 import com.moddynerd.transiq.payment.gateway.metadata.CardMetadataFactory;
 import com.moddynerd.transiq.payment.gateway.model.*;
+import com.moddynerd.transiq.payment.gateway.payment.PaymentHandler;
 import com.moddynerd.transiq.payment.repository.CardPaymentDetailsRepository;
 import com.moddynerd.transiq.payment.repository.PaymentRepository;
+import com.moddynerd.transiq.payment.repository.UpiPaymentDetailsRepository;
 import com.moddynerd.transiq.payment.state.PaymentStateMachine;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -37,9 +42,11 @@ public class PaymentProcessorImpl implements PaymentProcessor {
     private final PaymentRepository paymentRepository;
     private final GatewayAuthorizationService gatewayAuthorizationService;
     private final CardPaymentDetailsRepository cardPaymentDetailsRepository;
+    private final UpiPaymentDetailsRepository upiPaymentDetailsRepository;
     private final BinResolver binResolver;
     private final CardMetadataFactory cardMetadataFactory;
     private final DomainEventPublisher domainEventPublisher;
+    private final List<PaymentHandler> paymentHandlers;
 
     @Override
     public void process(Payment payment) {
@@ -95,6 +102,40 @@ public class PaymentProcessorImpl implements PaymentProcessor {
     }
 
     private AuthorizationResult authorize(Payment payment) {
+
+        if (payment.getPaymentMethodType() != PaymentMethodType.CARD) {
+            Optional<PaymentHandler> handler = paymentHandlers.stream()
+                    .filter(h -> h.supports(payment.getPaymentMethodType()))
+                    .findFirst();
+
+            if (handler.isPresent()) {
+                AuthorizationRequest request = new AuthorizationRequest(
+                        payment.getId(),
+                        payment.getPaymentReference(),
+                        payment.getMerchant().getId(),
+                        payment.getAmount(),
+                        payment.getCurrency(),
+                        payment.getPaymentMethodType(),
+                        null,
+                        null,
+                        Instant.now()
+                );
+
+                AuthorizationResponse response = handler.get().authorize(request);
+
+                if (payment.getPaymentMethodType() == PaymentMethodType.UPI) {
+                    updateUpiDetails(payment, response);
+                }
+
+                return mapToResult(response);
+            }
+
+            return new AuthorizationResult(
+                    AuthorizationDecision.APPROVED,
+                    FailureCode.NONE,
+                    "Payment Approved"
+            );
+        }
 
         Optional<CardPaymentDetails> optionalDetails =
                 cardPaymentDetailsRepository.findByPaymentId(payment.getId());
@@ -164,6 +205,25 @@ public class PaymentProcessorImpl implements PaymentProcessor {
             case MASTERCARD -> com.moddynerd.transiq.payment.gateway.card.CardBrand.MASTERCARD;
             case RUPAY -> com.moddynerd.transiq.payment.gateway.card.CardBrand.RUPAY;
         };
+    }
+
+    private void updateUpiDetails(
+            Payment payment,
+            AuthorizationResponse response
+    ) {
+        upiPaymentDetailsRepository.findByPaymentId(payment.getId())
+                .ifPresent(details -> {
+                    if (response.metadata() != null) {
+                        details.setUpiTransactionReference(
+                                response.metadata().authorizationCode()
+                        );
+                    }
+                    details.setGatewayResponseCode(
+                            response.responseCode().name()
+                    );
+                    details.setGatewayMessage(response.message());
+                    upiPaymentDetailsRepository.save(details);
+                });
     }
 
     private void updateCardDetails(

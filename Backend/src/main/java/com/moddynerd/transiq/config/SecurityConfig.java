@@ -2,6 +2,7 @@ package com.moddynerd.transiq.config;
 
 import com.moddynerd.transiq.apikey.security.ApiKeyAuthenticationEntryPoint;
 import com.moddynerd.transiq.apikey.security.ApiKeyAuthenticationFilter;
+import com.moddynerd.transiq.apikey.security.ApiKeyScopeFilter;
 import com.moddynerd.transiq.apikey.service.ApiKeyAuthenticationService;
 import com.moddynerd.transiq.auth.security.CustomUserDetailsService;
 import com.moddynerd.transiq.auth.security.JwtAuthenticationFilter;
@@ -53,6 +54,28 @@ public class SecurityConfig {
         return source;
     }
 
+    private static final java.util.Set<String> ALLOWED_SORT_PROPERTIES = java.util.Set.of(
+            "createdAt", "updatedAt", "amount", "status", "id"
+    );
+
+    @Bean
+    @Order(0)
+    public SecurityFilterChain actuatorSecurityFilterChain(
+            HttpSecurity http
+    ) throws Exception {
+        http
+                .securityMatcher("/actuator/**", "/api/v1/merchants/register")
+                .csrf(csrf -> csrf.disable())
+                .sessionManagement(session ->
+                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/actuator/health", "/actuator/info").permitAll()
+                        .anyRequest().permitAll()
+                );
+        return http.build();
+    }
+
     @Bean
     @Order(1)
     public SecurityFilterChain authSecurityFilterChain(
@@ -87,19 +110,58 @@ public class SecurityConfig {
 
     @Bean
     @Order(2)
+    public SecurityFilterChain adminSecurityFilterChain(
+            HttpSecurity http
+    ) throws Exception {
+
+        http
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .securityMatcher("/api/v1/admin/**")
+                .csrf(csrf -> csrf.disable())
+
+                .sessionManagement(session ->
+                        session.sessionCreationPolicy(
+                                SessionCreationPolicy.STATELESS
+                        )
+                )
+
+                .authorizeHttpRequests(auth -> auth
+                        .anyRequest().authenticated()
+                )
+
+                .addFilterBefore(
+                        new RateLimitingFilter(),
+                        UsernamePasswordAuthenticationFilter.class
+                )
+                .addFilterBefore(
+                        new JwtAuthenticationFilter(jwtService, customUserDetailsService),
+                        UsernamePasswordAuthenticationFilter.class
+                );
+
+        return http.build();
+    }
+
+    @Bean
+    @Order(3)
     public SecurityFilterChain paymentSecurityFilterChain(
             HttpSecurity http
     ) throws Exception {
 
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .securityMatcher(
-                        "/api/v1/payments/**",
-                        "/api/v1/ledger/**",
-                        "/api/v1/settlements/**",
-                        "/api/v1/refunds/**",
-                        "/api/v1/webhooks/**"
-                )
+                .securityMatcher((jakarta.servlet.http.HttpServletRequest request) -> {
+                    String path = request.getServletPath();
+                    if (path.startsWith("/api/v1/dashboard")) {
+                        return false;
+                    }
+                    return path.startsWith("/api/v1/payments")
+                            || path.startsWith("/api/v1/ledger")
+                            || path.startsWith("/api/v1/settlements")
+                            || path.startsWith("/api/v1/refunds")
+                            || path.startsWith("/api/v1/webhooks")
+                            || path.startsWith("/api/v1/chargebacks")
+                            || path.startsWith("/api/v1/adjustments");
+                })
 
                 .csrf(csrf -> csrf.disable())
 
@@ -115,7 +177,48 @@ public class SecurityConfig {
                 )
 
                 .addFilterBefore(
+                        new RateLimitingFilter(),
+                        UsernamePasswordAuthenticationFilter.class
+                )
+                .addFilterBefore(
                         new ApiKeyAuthenticationFilter(apiKeyAuthenticationService),
+                        UsernamePasswordAuthenticationFilter.class
+                )
+                .addFilterAfter(
+                        new ApiKeyScopeFilter(),
+                        ApiKeyAuthenticationFilter.class
+                );
+
+        return http.build();
+    }
+
+    @Bean
+    @Order(4)
+    public SecurityFilterChain dashboardSecurityFilterChain(
+            HttpSecurity http
+    ) throws Exception {
+
+        http
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .securityMatcher("/api/v1/dashboard/**")
+                .csrf(csrf -> csrf.disable())
+
+                .sessionManagement(session ->
+                        session.sessionCreationPolicy(
+                                SessionCreationPolicy.STATELESS
+                        )
+                )
+
+                .authorizeHttpRequests(auth -> auth
+                        .anyRequest().authenticated()
+                )
+
+                .addFilterBefore(
+                        new RateLimitingFilter(),
+                        UsernamePasswordAuthenticationFilter.class
+                )
+                .addFilterBefore(
+                        new JwtAuthenticationFilter(jwtService, customUserDetailsService),
                         UsernamePasswordAuthenticationFilter.class
                 );
 
@@ -123,7 +226,7 @@ public class SecurityConfig {
     }
 
     @Bean
-    @Order(3)
+    @Order(5)
     public SecurityFilterChain defaultSecurityFilterChain(
             HttpSecurity http
     ) throws Exception {
@@ -142,6 +245,10 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
 
+                .addFilterBefore(
+                        new RateLimitingFilter(),
+                        UsernamePasswordAuthenticationFilter.class
+                )
                 .addFilterBefore(
                         new JwtAuthenticationFilter(jwtService, customUserDetailsService),
                         UsernamePasswordAuthenticationFilter.class

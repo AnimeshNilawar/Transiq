@@ -68,4 +68,7 @@ public class Payment extends BaseEntity {
 
     @OneToOne(mappedBy = "payment", fetch = FetchType.LAZY)
     private CardPaymentDetails cardPaymentDetails;
+
+    @OneToOne(mappedBy = "payment", fetch = FetchType.LAZY)
+    private UpiPaymentDetails upiPaymentDetails;
 }

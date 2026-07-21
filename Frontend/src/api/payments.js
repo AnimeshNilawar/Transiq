@@ -35,6 +35,7 @@ import { generateIdempotencyKey } from '@/lib/utils'
  * @property {string} [maskedCardNumber]
  * @property {number} [expiryMonth]
  * @property {number} [expiryYear]
+ * @property {string} [upiId]
  */
 
 // ─── Dashboard (JWT auth) ──────────────────────────────────────────

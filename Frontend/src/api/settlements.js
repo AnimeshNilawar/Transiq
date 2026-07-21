@@ -35,3 +35,11 @@ export function getSettlements(params = {}) {
 export function getSettlement(settlementReference) {
   return jwtClient.get(`/dashboard/settlements/${settlementReference}`)
 }
+
+/**
+ * Create a settlement from the dashboard (JWT auth)
+ * @returns {Promise<import('axios').AxiosResponse<{ settlementReference: string, amount: number, currency: string, status: string, createdAt: string }>>}
+ */
+export function createDashboardSettlement() {
+  return jwtClient.post('/dashboard/settlements')
+}

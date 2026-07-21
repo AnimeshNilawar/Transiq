@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useAuth } from '@/hooks/useAuth'
+import useAuth from '@/hooks/useAuth'
 import {
   useUsers,
   useInviteUser,
@@ -9,9 +9,10 @@ import {
 import { CopyModal } from '@/components/shared/CopyModal'
 import { StatusBadge } from '@/components/shared/StatusBadge'
 import { TableSkeleton } from '@/components/shared/LoadingSkeleton'
+import { Item } from '@/components/shared/Item'
 import { Plus, Trash2, Loader2 } from 'lucide-react'
 
-export function SettingsPage() {
+export default function SettingsPage() {
   const { user } = useAuth()
   const { data: users, isLoading: usersLoading } = useUsers()
   const inviteMutation = useInviteUser()
@@ -69,21 +70,21 @@ export function SettingsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">Settings</h1>
         <p className="text-sm text-muted-foreground">
           Account and team management
         </p>
       </div>
 
       {/* Account Details */}
-      <div className="rounded-lg border p-6 space-y-4">
-        <h2 className="text-lg font-semibold">Account Details</h2>
+      <div className="bg-card rounded-lg border border-border p-6 space-y-4">
+        <h2 className="text-lg font-semibold text-card-foreground">Account Details</h2>
         <div className="grid grid-cols-2 gap-4">
           <Item label="Name" value={user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : '-'} />
-          <Item label="Email" value={user?.email || '-'} />
+          <Item label="Email" value={user?.email || '-'} mono />
           <Item label="Role" value={user?.role || '-'} />
           <Item label="Business" value={user?.merchant?.businessName || '-'} />
-          <Item label="Business Email" value={user?.merchant?.businessEmail || '-'} />
+          <Item label="Business Email" value={user?.merchant?.businessEmail || '-'} mono />
           <Item
             label="Merchant Status"
             value={user?.merchant?.status || '-'}
@@ -92,10 +93,10 @@ export function SettingsPage() {
       </div>
 
       {/* Team Management */}
-      <div className="rounded-lg border p-6 space-y-4">
+      <div className="bg-card rounded-lg border border-border p-6 space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-semibold">Team Members</h2>
+            <h2 className="text-lg font-semibold text-card-foreground">Team Members</h2>
             <p className="text-sm text-muted-foreground">
               {users?.length || 0} member{(users?.length || 0) !== 1 ? 's' : ''}
             </p>
@@ -103,7 +104,7 @@ export function SettingsPage() {
           {canManageUsers && (
             <button
               onClick={() => setShowInviteModal(true)}
-              className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+              className="inline-flex items-center gap-2 rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-foreground hover:bg-accent/90 transition-colors"
             >
               <Plus className="h-4 w-4" />
               Invite User
@@ -114,7 +115,7 @@ export function SettingsPage() {
         {usersLoading ? (
           <TableSkeleton rows={3} columns={4} />
         ) : (
-          <div className="overflow-x-auto rounded-lg border">
+          <div className="overflow-x-auto rounded-lg border border-border">
             <table className="w-full caption-bottom text-sm">
               <thead className="[&_tr]:border-b">
                 <tr className="border-b transition-colors hover:bg-muted/50">
@@ -127,15 +128,15 @@ export function SettingsPage() {
               <tbody className="[&_tr:last-child]:border-0">
                 {users?.map((u) => (
                   <tr key={u.id} className="border-b transition-colors hover:bg-muted/50">
-                    <td className="p-4 align-middle">
+                    <td className="p-4 align-middle text-card-foreground">
                       {u.firstName || u.lastName
                         ? `${u.firstName || ''} ${u.lastName || ''}`.trim()
                         : '-'}
                     </td>
-                    <td className="p-4 align-middle">
+                    <td className="p-4 align-middle font-mono text-xs">
                       {u.email}
                       {u.id === user?.id && (
-                        <span className="text-xs text-muted-foreground ml-2">(you)</span>
+                        <span className="text-xs text-muted-foreground ml-2 font-sans">(you)</span>
                       )}
                     </td>
                     <td className="p-4 align-middle">
@@ -144,7 +145,7 @@ export function SettingsPage() {
                           value={u.role}
                           onChange={(e) => handleRoleChange(u.id, e.target.value)}
                           disabled={roleMutation.isPending}
-                          className="rounded-md border px-2 py-1 text-sm"
+                          className="rounded-md border border-border bg-card px-2 py-1 text-sm text-card-foreground"
                         >
                           <option value="MEMBER">Member</option>
                           <option value="ADMIN">Admin</option>
@@ -157,7 +158,7 @@ export function SettingsPage() {
                       )}
                     </td>
                     <td className="p-4 align-middle">
-                      {canManageUsers && u.id !== user?.id && (
+                      {canManageUsers && u.id !== user?.id ? (
                         <button
                           onClick={() => handleDelete(u.id)}
                           disabled={deleteMutation.isPending}
@@ -166,6 +167,8 @@ export function SettingsPage() {
                           <Trash2 className="h-3.5 w-3.5" />
                           Remove
                         </button>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">—</span>
                       )}
                     </td>
                   </tr>
@@ -180,46 +183,46 @@ export function SettingsPage() {
       {showInviteModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="fixed inset-0 bg-black/50" onClick={() => setShowInviteModal(false)} />
-          <div className="relative bg-background rounded-lg border shadow-lg p-6 w-full max-w-md mx-4">
-            <h2 className="text-lg font-semibold mb-4">Invite Team Member</h2>
+          <div className="relative bg-card rounded-lg border border-border shadow-lg p-6 w-full max-w-md mx-4">
+            <h2 className="text-lg font-semibold text-card-foreground mb-4">Invite Team Member</h2>
             <form onSubmit={handleInvite} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1.5">Email *</label>
+                <label className="block text-sm font-medium mb-1.5 text-card-foreground">Email *</label>
                 <input
                   type="email"
                   value={inviteForm.email}
                   onChange={(e) => setInviteForm((f) => ({ ...f, email: e.target.value }))}
                   required
-                  className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                  className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm text-card-foreground outline-none focus:ring-2 focus:ring-ring"
                   placeholder="colleague@company.com"
                 />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium mb-1.5">First Name</label>
+                  <label className="block text-sm font-medium mb-1.5 text-card-foreground">First Name</label>
                   <input
                     type="text"
                     value={inviteForm.firstName}
                     onChange={(e) => setInviteForm((f) => ({ ...f, firstName: e.target.value }))}
-                    className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                    className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm text-card-foreground outline-none focus:ring-2 focus:ring-ring"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1.5">Last Name</label>
+                  <label className="block text-sm font-medium mb-1.5 text-card-foreground">Last Name</label>
                   <input
                     type="text"
                     value={inviteForm.lastName}
                     onChange={(e) => setInviteForm((f) => ({ ...f, lastName: e.target.value }))}
-                    className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                    className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm text-card-foreground outline-none focus:ring-2 focus:ring-ring"
                   />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1.5">Role *</label>
+                <label className="block text-sm font-medium mb-1.5 text-card-foreground">Role *</label>
                 <select
                   value={inviteForm.role}
                   onChange={(e) => setInviteForm((f) => ({ ...f, role: e.target.value }))}
-                  className="w-full rounded-md border px-3 py-2 text-sm"
+                  className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm text-card-foreground"
                 >
                   <option value="MEMBER">Member</option>
                   <option value="ADMIN">Admin</option>
@@ -232,7 +235,7 @@ export function SettingsPage() {
                 <button
                   type="submit"
                   disabled={inviteMutation.isPending}
-                  className="flex-1 inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                  className="flex-1 inline-flex items-center justify-center rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-foreground hover:bg-accent/90 disabled:opacity-50"
                 >
                   {inviteMutation.isPending && (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -242,7 +245,7 @@ export function SettingsPage() {
                 <button
                   type="button"
                   onClick={() => setShowInviteModal(false)}
-                  className="inline-flex items-center justify-center rounded-md border px-4 py-2 text-sm hover:bg-accent"
+                  className="inline-flex items-center justify-center rounded-md border border-border px-4 py-2 text-sm text-card-foreground hover:bg-muted"
                 >
                   Cancel
                 </button>
@@ -261,15 +264,6 @@ export function SettingsPage() {
         secretValue={inviteResult?.temporaryPassword || ''}
         warning={`Share this temporary password with ${inviteResult?.email || 'the user'} securely. It won't be shown again.`}
       />
-    </div>
-  )
-}
-
-function Item({ label, value }) {
-  return (
-    <div>
-      <p className="text-sm text-muted-foreground">{label}</p>
-      <p className="text-sm font-medium mt-0.5">{value || '-'}</p>
     </div>
   )
 }

@@ -31,6 +31,8 @@ public class WebhookDeliveryServiceImpl implements WebhookDeliveryService {
         WebhookDelivery delivery = WebhookDelivery.builder()
                 .endpoint(endpoint)
                 .event(event)
+                .eventReference(event.getReference())
+                .eventType(event.getEventType().name().toLowerCase().replace('_', '.'))
                 .status(WebhookDeliveryStatus.PENDING)
                 .attemptCount(0)
                 .build();

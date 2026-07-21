@@ -10,11 +10,13 @@ public record RefundSucceededEvent(
         UUID eventId,
         Instant occurredAt,
         UUID refundId,
-        String refundReference
+        String refundReference,
+        UUID merchantId
 
 ) implements DomainEvent {
 
     public RefundSucceededEvent(
+            UUID merchantId,
             UUID refundId,
             String refundReference
     ) {
@@ -22,7 +24,8 @@ public record RefundSucceededEvent(
                 UUID.randomUUID(),
                 Instant.now(),
                 refundId,
-                refundReference
+                refundReference,
+                merchantId
         );
     }
 }

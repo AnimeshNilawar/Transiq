@@ -4,7 +4,7 @@ import com.moddynerd.transiq.auth.exception.ResourceNotFoundException;
 import com.moddynerd.transiq.event.publisher.DomainEventPublisher;
 import com.moddynerd.transiq.event.settlement.SettlementCompletedEvent;
 import com.moddynerd.transiq.merchant.entity.Merchant;
-import com.moddynerd.transiq.payment.ledger.dto.MerchantBalanceResponse;
+import com.moddynerd.transiq.payment.ledger.calculator.BalanceCalculator;
 import com.moddynerd.transiq.payment.ledger.service.MerchantBalanceService;
 import com.moddynerd.transiq.payment.settlement.dto.CreateSettlementResponse;
 import com.moddynerd.transiq.payment.settlement.dto.SettlementResponse;
@@ -33,15 +33,24 @@ public class SettlementServiceImpl implements SettlementService{
     private final MerchantBalanceService merchantBalanceService;
     private final CurrentApiKeyService currentApiKeyService;
     private final DomainEventPublisher domainEventPublisher;
+    private final com.moddynerd.transiq.payment.ledger.repository.LedgerEntryRepository ledgerEntryRepository;
+    private final BalanceCalculator balanceCalculator;
 
     @Override
     @Transactional
     public CreateSettlementResponse createSettlement() {
         Merchant merchant = currentApiKeyService.getCurrentPrincipal().merchant();
+        return createSettlementForMerchant(merchant);
+    }
 
-        MerchantBalanceResponse balance = merchantBalanceService.getBalance();
+    @Override
+    @Transactional
+    public CreateSettlementResponse createSettlementForMerchant(Merchant merchant) {
+        List<com.moddynerd.transiq.payment.ledger.entity.LedgerEntry> entries =
+                ledgerEntryRepository.findAllByMerchantOrderByCreatedAtAsc(merchant);
+        Long availableBalance = balanceCalculator.calculateMerchantBalance(entries);
 
-        if(balance.availableBalance() <= 0){
+        if(availableBalance <= 0){
             throw new ConflictException("No funds available for settlement");
         }
 
@@ -56,8 +65,8 @@ public class SettlementServiceImpl implements SettlementService{
         Settlement settlement = Settlement.builder()
                 .merchant(merchant)
                 .settlementReference(reference)
-                .amount(balance.availableBalance())
-                .currency(balance.currency())
+                .amount(availableBalance)
+                .currency("INR")
                 .status(SettlementStatus.PENDING)
                 .build();
 
@@ -65,6 +74,7 @@ public class SettlementServiceImpl implements SettlementService{
 
         domainEventPublisher.publish(
                 new SettlementCompletedEvent(
+                        merchant.getId(),
                         settlement.getId(),
                         settlement.getSettlementReference()
                 )
@@ -82,8 +92,6 @@ public class SettlementServiceImpl implements SettlementService{
         settlementRepository.save(settlement);
 
         return settlementMapper.toCreateResponse(settlement);
-
-
     }
 
     @Override

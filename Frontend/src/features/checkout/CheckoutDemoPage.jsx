@@ -2,11 +2,17 @@ import { useState } from 'react'
 import { createPayment, confirmPayment } from '@/api/payments'
 import { CheckCircle, XCircle, Loader2 } from 'lucide-react'
 
-export function CheckoutDemoPage() {
+const PAYMENT_METHODS = [
+  { value: 'CARD', label: 'Credit / Debit Card' },
+  { value: 'UPI', label: 'UPI' },
+]
+
+export default function CheckoutDemoPage() {
   const [apiKey, setApiKey] = useState('')
-  const [step, setStep] = useState('setup') // setup | form | processing | success | failed
+  const [step, setStep] = useState('setup')
   const [error, setError] = useState('')
   const [paymentResult, setPaymentResult] = useState(null)
+  const [paymentMethod, setPaymentMethod] = useState('CARD')
   const [form, setForm] = useState({
     amount: '',
     currency: 'INR',
@@ -18,6 +24,7 @@ export function CheckoutDemoPage() {
     expiryMonth: '',
     expiryYear: '',
     cvv: '',
+    upiId: '',
   })
 
   const handleCreatePayment = async (e) => {
@@ -26,6 +33,8 @@ export function CheckoutDemoPage() {
     setStep('processing')
 
     try {
+      sessionStorage.setItem('active_api_key', apiKey)
+
       const response = await createPayment({
         amount: Math.round(parseFloat(form.amount) * 100),
         currency: form.currency,
@@ -35,7 +44,6 @@ export function CheckoutDemoPage() {
         description: form.description || undefined,
       })
 
-      // Override the Authorization header for this request
       const payment = response.data
       setPaymentResult(payment)
       setStep('form')
@@ -45,23 +53,37 @@ export function CheckoutDemoPage() {
     }
   }
 
+  const detectCardNetwork = (number) => {
+    if (number.startsWith('4')) return 'VISA'
+    if (number.startsWith('5') || number.startsWith('2')) return 'MASTERCARD'
+    if (number.startsWith('3')) return 'AMEX'
+    if (number.startsWith('6')) return 'RUPAY'
+    return 'MASTERCARD'
+  }
+
   const handleConfirmPayment = async (e) => {
     e.preventDefault()
     setError('')
     setStep('processing')
 
     try {
-      const maskedCard = form.cardNumber.slice(0, 6) + 'XXXXXX' + form.cardNumber.slice(-4)
-
-      const response = await confirmPayment(paymentResult.paymentReference, {
+      const payload = {
         clientSecret: paymentResult.clientSecret,
-        paymentMethodType: 'CARD',
-        cardNetwork: form.cardNumber.startsWith('4') ? 'VISA' : 'MASTERCARD',
-        issuerBank: 'HDFC',
-        maskedCardNumber: maskedCard,
-        expiryMonth: parseInt(form.expiryMonth),
-        expiryYear: parseInt(form.expiryYear),
-      })
+        paymentMethodType: paymentMethod,
+      }
+
+      if (paymentMethod === 'CARD') {
+        const maskedCard = form.cardNumber.slice(0, 6) + 'XXXXXX' + form.cardNumber.slice(-4)
+        payload.cardNetwork = detectCardNetwork(form.cardNumber)
+        payload.issuerBank = 'HDFC'
+        payload.maskedCardNumber = maskedCard
+        payload.expiryMonth = parseInt(form.expiryMonth)
+        payload.expiryYear = parseInt(form.expiryYear)
+      } else {
+        payload.upiId = form.upiId
+      }
+
+      const response = await confirmPayment(paymentResult.paymentReference, payload)
 
       setPaymentResult(response.data)
       if (response.data.status === 'SUCCEEDED') {
@@ -75,14 +97,34 @@ export function CheckoutDemoPage() {
     }
   }
 
+  const resetAll = () => {
+    setStep('setup')
+    setPaymentResult(null)
+    setPaymentMethod('CARD')
+    sessionStorage.removeItem('active_api_key')
+    setForm({
+      amount: '',
+      currency: 'INR',
+      customerEmail: '',
+      customerName: '',
+      orderId: '',
+      description: '',
+      cardNumber: '',
+      expiryMonth: '',
+      expiryYear: '',
+      cvv: '',
+      upiId: '',
+    })
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="bg-white border-b px-6 py-4">
+    <div className="min-h-screen bg-muted">
+      <div className="bg-card border-b border-border px-6 py-4">
         <div className="max-w-lg mx-auto flex items-center justify-between">
-          <h1 className="text-lg font-bold">Transiq Checkout Demo</h1>
+          <h1 className="text-lg font-bold text-card-foreground">Transiq Checkout Demo</h1>
           <a
             href="/"
-            className="text-sm text-blue-600 hover:underline"
+            className="text-sm text-accent hover:underline"
           >
             Back to Dashboard
           </a>
@@ -91,25 +133,25 @@ export function CheckoutDemoPage() {
 
       <div className="max-w-lg mx-auto p-6">
         {step === 'setup' && (
-          <div className="bg-white rounded-lg border shadow-sm p-6 space-y-4">
-            <h2 className="text-lg font-semibold">1. Configure</h2>
+          <div className="bg-card rounded-lg border border-border shadow-sm p-6 space-y-4">
+            <h2 className="text-lg font-semibold text-card-foreground">1. Configure</h2>
             <p className="text-sm text-muted-foreground">
               Enter a publishable API key to start the demo flow.
             </p>
             <div>
-              <label className="block text-sm font-medium mb-1.5">
+              <label className="block text-sm font-medium mb-1.5 text-card-foreground">
                 Publishable API Key
               </label>
               <input
                 type="password"
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
-                className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm text-card-foreground outline-none focus:ring-2 focus:ring-ring"
                 placeholder="pk_test_..."
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1.5">
+              <label className="block text-sm font-medium mb-1.5 text-card-foreground">
                 Order ID
               </label>
               <input
@@ -119,13 +161,13 @@ export function CheckoutDemoPage() {
                   setForm((f) => ({ ...f, orderId: e.target.value }))
                 }
                 required
-                className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm text-card-foreground outline-none focus:ring-2 focus:ring-ring"
                 placeholder="order-12345"
               />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm font-medium mb-1.5">
+                <label className="block text-sm font-medium mb-1.5 text-card-foreground">
                   Amount
                 </label>
                 <input
@@ -135,12 +177,12 @@ export function CheckoutDemoPage() {
                     setForm((f) => ({ ...f, amount: e.target.value }))
                   }
                   required
-                  className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm text-card-foreground outline-none focus:ring-2 focus:ring-ring"
                   placeholder="100.00"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1.5">
+                <label className="block text-sm font-medium mb-1.5 text-card-foreground">
                   Currency
                 </label>
                 <select
@@ -148,7 +190,7 @@ export function CheckoutDemoPage() {
                   onChange={(e) =>
                     setForm((f) => ({ ...f, currency: e.target.value }))
                   }
-                  className="w-full rounded-md border px-3 py-2 text-sm"
+                  className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm text-card-foreground"
                 >
                   <option value="INR">INR</option>
                   <option value="USD">USD</option>
@@ -158,7 +200,7 @@ export function CheckoutDemoPage() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm font-medium mb-1.5">
+                <label className="block text-sm font-medium mb-1.5 text-card-foreground">
                   Customer Name
                 </label>
                 <input
@@ -167,12 +209,12 @@ export function CheckoutDemoPage() {
                   onChange={(e) =>
                     setForm((f) => ({ ...f, customerName: e.target.value }))
                   }
-                  className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm text-card-foreground outline-none focus:ring-2 focus:ring-ring"
                   placeholder="Jane Smith"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1.5">
+                <label className="block text-sm font-medium mb-1.5 text-card-foreground">
                   Customer Email
                 </label>
                 <input
@@ -181,14 +223,14 @@ export function CheckoutDemoPage() {
                   onChange={(e) =>
                     setForm((f) => ({ ...f, customerEmail: e.target.value }))
                   }
-                  className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm text-card-foreground outline-none focus:ring-2 focus:ring-ring"
                   placeholder="jane@example.com"
                 />
               </div>
             </div>
 
             {error && (
-              <p className="text-sm text-red-600 bg-red-50 p-2 rounded">
+              <p className="text-sm text-destructive bg-destructive/10 p-2 rounded">
                 {error}
               </p>
             )}
@@ -196,7 +238,7 @@ export function CheckoutDemoPage() {
             <button
               onClick={handleCreatePayment}
               disabled={!apiKey || !form.orderId || !form.amount}
-              className="w-full bg-blue-600 text-white rounded-md py-2 text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
+              className="w-full bg-accent text-accent-foreground rounded-md py-2 text-sm font-medium hover:bg-accent/90 disabled:opacity-50 transition-colors"
             >
               Create Payment
             </button>
@@ -204,90 +246,149 @@ export function CheckoutDemoPage() {
         )}
 
         {step === 'form' && (
-          <div className="bg-white rounded-lg border shadow-sm p-6 space-y-4">
-            <h2 className="text-lg font-semibold">2. Card Details</h2>
+          <div className="bg-card rounded-lg border border-border shadow-sm p-6 space-y-4">
+            <h2 className="text-lg font-semibold text-card-foreground">2. Payment Details</h2>
             <p className="text-sm text-muted-foreground">
-              Payment ref: <code className="bg-muted px-1 rounded">{paymentResult?.paymentReference}</code>
+              Payment ref: <code className="bg-muted px-1 rounded text-card-foreground">{paymentResult?.paymentReference}</code>
             </p>
 
-            <form onSubmit={handleConfirmPayment} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1.5">
-                  Card Number
-                </label>
-                <input
-                  type="text"
-                  value={form.cardNumber}
-                  onChange={(e) =>
-                    setForm((f) => ({
-                      ...f,
-                      cardNumber: e.target.value.replace(/\D/g, '').slice(0, 16),
-                    }))
-                  }
-                  required
-                  maxLength={16}
-                  className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 font-mono"
-                  placeholder="4111111111111111"
-                />
+            <div>
+              <label className="block text-sm font-medium mb-1.5 text-card-foreground">
+                Payment Method
+              </label>
+              <div className="flex gap-2">
+                {PAYMENT_METHODS.map((m) => (
+                  <button
+                    key={m.value}
+                    type="button"
+                    onClick={() => setPaymentMethod(m.value)}
+                    className={`flex-1 rounded-md py-2 text-sm font-medium border transition-colors ${
+                      paymentMethod === m.value
+                        ? 'bg-accent text-accent-foreground border-accent'
+                        : 'bg-card text-card-foreground border-border hover:bg-muted'
+                    }`}
+                  >
+                    {m.label}
+                  </button>
+                ))}
               </div>
-              <div className="grid grid-cols-3 gap-3">
+            </div>
+
+            <form onSubmit={handleConfirmPayment} className="space-y-4">
+              {paymentMethod === 'CARD' ? (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5 text-card-foreground">
+                      Card Number
+                    </label>
+                    <input
+                      type="text"
+                      value={form.cardNumber}
+                      onChange={(e) =>
+                        setForm((f) => ({
+                          ...f,
+                          cardNumber: e.target.value.replace(/\D/g, '').slice(0, 16),
+                        }))
+                      }
+                      required
+                      maxLength={16}
+                      className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm text-card-foreground outline-none focus:ring-2 focus:ring-ring font-mono"
+                      placeholder="4111111111111111"
+                    />
+                  </div>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5 text-card-foreground">
+                        Exp Month
+                      </label>
+                      <input
+                        type="number"
+                        value={form.expiryMonth}
+                        onChange={(e) =>
+                          setForm((f) => ({ ...f, expiryMonth: e.target.value }))
+                        }
+                        required
+                        min={1}
+                        max={12}
+                        className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm text-card-foreground outline-none focus:ring-2 focus:ring-ring"
+                        placeholder="12"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5 text-card-foreground">
+                        Exp Year
+                      </label>
+                      <input
+                        type="number"
+                        value={form.expiryYear}
+                        onChange={(e) =>
+                          setForm((f) => ({ ...f, expiryYear: e.target.value }))
+                        }
+                        required
+                        min={2024}
+                        max={2040}
+                        className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm text-card-foreground outline-none focus:ring-2 focus:ring-ring"
+                        placeholder="2028"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5 text-card-foreground">
+                        CVV
+                      </label>
+                      <input
+                        type="text"
+                        value={form.cvv}
+                        onChange={(e) =>
+                          setForm((f) => ({
+                            ...f,
+                            cvv: e.target.value.replace(/\D/g, '').slice(0, 4),
+                          }))
+                        }
+                        required
+                        maxLength={4}
+                        className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm text-card-foreground outline-none focus:ring-2 focus:ring-ring"
+                        placeholder="123"
+                      />
+                    </div>
+                  </div>
+                </>
+              ) : (
                 <div>
-                  <label className="block text-sm font-medium mb-1.5">
-                    Exp Month
-                  </label>
-                  <input
-                    type="number"
-                    value={form.expiryMonth}
-                    onChange={(e) =>
-                      setForm((f) => ({ ...f, expiryMonth: e.target.value }))
-                    }
-                    required
-                    min={1}
-                    max={12}
-                    className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="12"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1.5">
-                    Exp Year
-                  </label>
-                  <input
-                    type="number"
-                    value={form.expiryYear}
-                    onChange={(e) =>
-                      setForm((f) => ({ ...f, expiryYear: e.target.value }))
-                    }
-                    required
-                    min={2024}
-                    max={2040}
-                    className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="2028"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1.5">
-                    CVV
+                  <label className="block text-sm font-medium mb-1.5 text-card-foreground">
+                    UPI ID
                   </label>
                   <input
                     type="text"
-                    value={form.cvv}
+                    value={form.upiId}
                     onChange={(e) =>
-                      setForm((f) => ({
-                        ...f,
-                        cvv: e.target.value.replace(/\D/g, '').slice(0, 4),
-                      }))
+                      setForm((f) => ({ ...f, upiId: e.target.value }))
                     }
                     required
-                    maxLength={4}
-                    className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="123"
+                    className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm text-card-foreground outline-none focus:ring-2 focus:ring-ring font-mono"
+                    placeholder="username@paytm"
                   />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Enter your UPI ID (e.g., username@paytm, user@oksbi, name@axl, etc.)
+                  </p>
+                  <div className="mt-3 bg-muted rounded-md p-3 text-center">
+                    <p className="text-xs text-muted-foreground mb-1">Scan with any UPI app</p>
+                    <div className="inline-flex items-center justify-center w-40 h-40 bg-white rounded-md">
+                      <div className="text-center">
+                        <div className="text-3xl mb-1">📱</div>
+                        <div className="text-[8px] text-gray-400 leading-tight">
+                          SIMULATED<br />QR CODE
+                        </div>
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      ₹{parseFloat(form.amount || 0).toFixed(2)} payable
+                    </p>
+                  </div>
                 </div>
-              </div>
+              )}
 
               {error && (
-                <p className="text-sm text-red-600 bg-red-50 p-2 rounded">
+                <p className="text-sm text-destructive bg-destructive/10 p-2 rounded">
                   {error}
                 </p>
               )}
@@ -295,17 +396,14 @@ export function CheckoutDemoPage() {
               <div className="flex gap-2">
                 <button
                   type="submit"
-                  className="flex-1 bg-blue-600 text-white rounded-md py-2 text-sm font-medium hover:bg-blue-700 transition-colors"
+                  className="flex-1 bg-accent text-accent-foreground rounded-md py-2 text-sm font-medium hover:bg-accent/90 transition-colors"
                 >
-                  Confirm Payment
+                  Pay ₹{parseFloat(form.amount || 0).toFixed(2)}
                 </button>
                 <button
                   type="button"
-                  onClick={() => {
-                    setStep('setup')
-                    setPaymentResult(null)
-                  }}
-                  className="border rounded-md px-4 py-2 text-sm hover:bg-gray-50 transition-colors"
+                  onClick={resetAll}
+                  className="border border-border rounded-md px-4 py-2 text-sm text-card-foreground hover:bg-muted transition-colors"
                 >
                   Cancel
                 </button>
@@ -315,9 +413,9 @@ export function CheckoutDemoPage() {
         )}
 
         {step === 'processing' && (
-          <div className="bg-white rounded-lg border shadow-sm p-6 text-center space-y-4">
-            <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto" />
-            <p className="text-lg font-semibold">Processing...</p>
+          <div className="bg-card rounded-lg border border-border shadow-sm p-6 text-center space-y-4">
+            <Loader2 className="h-12 w-12 animate-spin text-accent mx-auto" />
+            <p className="text-lg font-semibold text-card-foreground">Processing...</p>
             <p className="text-sm text-muted-foreground">
               Please wait while we process your payment.
             </p>
@@ -325,15 +423,15 @@ export function CheckoutDemoPage() {
         )}
 
         {step === 'success' && (
-          <div className="bg-white rounded-lg border shadow-sm p-6 text-center space-y-4">
-            <CheckCircle className="h-16 w-16 text-green-500 mx-auto" />
-            <h2 className="text-xl font-bold text-green-700">
+          <div className="bg-card rounded-lg border border-border shadow-sm p-6 text-center space-y-4">
+            <CheckCircle className="h-16 w-16 text-success mx-auto" />
+            <h2 className="text-xl font-bold text-success">
               Payment Successful!
             </h2>
             <div className="text-sm text-muted-foreground space-y-1">
               <p>
                 Reference:{' '}
-                <code className="bg-muted px-1 rounded">
+                <code className="bg-muted px-1 rounded text-card-foreground">
                   {paymentResult?.paymentReference}
                 </code>
               </p>
@@ -341,26 +439,22 @@ export function CheckoutDemoPage() {
                 Amount: ₹{((paymentResult?.amount || 0) / 100).toFixed(2)}{' '}
                 {paymentResult?.currency}
               </p>
+              <p>Method: {paymentResult?.paymentMethodType}</p>
+              {paymentResult?.upiDetails && (
+                <p>
+                  UPI ID: <code className="bg-muted px-1 rounded text-card-foreground">{paymentResult.upiDetails.upiId}</code>
+                </p>
+              )}
+              {paymentResult?.upiDetails?.upiTransactionReference && (
+                <p>
+                  UPI Ref: <code className="bg-muted px-1 rounded text-card-foreground">{paymentResult.upiDetails.upiTransactionReference}</code>
+                </p>
+              )}
               <p>Status: {paymentResult?.status}</p>
             </div>
             <button
-              onClick={() => {
-                setStep('setup')
-                setPaymentResult(null)
-                setForm({
-                  amount: '',
-                  currency: 'INR',
-                  customerEmail: '',
-                  customerName: '',
-                  orderId: '',
-                  description: '',
-                  cardNumber: '',
-                  expiryMonth: '',
-                  expiryYear: '',
-                  cvv: '',
-                })
-              }}
-              className="bg-blue-600 text-white rounded-md px-4 py-2 text-sm font-medium hover:bg-blue-700 transition-colors"
+              onClick={resetAll}
+              className="bg-accent text-accent-foreground rounded-md px-4 py-2 text-sm font-medium hover:bg-accent/90 transition-colors"
             >
               Start New Payment
             </button>
@@ -368,20 +462,17 @@ export function CheckoutDemoPage() {
         )}
 
         {step === 'failed' && (
-          <div className="bg-white rounded-lg border shadow-sm p-6 text-center space-y-4">
-            <XCircle className="h-16 w-16 text-red-500 mx-auto" />
-            <h2 className="text-xl font-bold text-red-700">
+          <div className="bg-card rounded-lg border border-border shadow-sm p-6 text-center space-y-4">
+            <XCircle className="h-16 w-16 text-destructive mx-auto" />
+            <h2 className="text-xl font-bold text-destructive">
               Payment Failed
             </h2>
             <p className="text-sm text-muted-foreground">
               Reference: {paymentResult?.paymentReference}
             </p>
             <button
-              onClick={() => {
-                setStep('setup')
-                setPaymentResult(null)
-              }}
-              className="bg-blue-600 text-white rounded-md px-4 py-2 text-sm font-medium hover:bg-blue-700 transition-colors"
+              onClick={resetAll}
+              className="bg-accent text-accent-foreground rounded-md px-4 py-2 text-sm font-medium hover:bg-accent/90 transition-colors"
             >
               Try Again
             </button>

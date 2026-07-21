@@ -7,6 +7,8 @@ public enum WebhookEventType {
 
     REFUND_SUCCEEDED,
 
-    SETTLEMENT_COMPLETED
+    SETTLEMENT_COMPLETED,
+
+    CHARGEBACK_CREATED
 
 }

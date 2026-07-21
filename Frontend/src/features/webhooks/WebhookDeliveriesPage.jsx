@@ -6,10 +6,11 @@ import {
 } from '@/hooks/useWebhookDeliveries'
 import { StatusBadge } from '@/components/shared/StatusBadge'
 import { TableSkeleton } from '@/components/shared/LoadingSkeleton'
+import { Pagination } from '@/components/shared/Pagination'
 import { format } from 'date-fns'
 import { RefreshCw } from 'lucide-react'
 
-export function WebhookDeliveriesPage() {
+export default function WebhookDeliveriesPage() {
   const navigate = useNavigate()
   const retryMutation = useRetryWebhookDelivery()
   const [filters, setFilters] = useState({
@@ -40,7 +41,7 @@ export function WebhookDeliveriesPage() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">
           Webhook Deliveries
         </h1>
         <p className="text-sm text-muted-foreground">
@@ -54,7 +55,7 @@ export function WebhookDeliveriesPage() {
           onChange={(e) =>
             setFilters((f) => ({ ...f, status: e.target.value, page: 0 }))
           }
-          className="rounded-md border px-3 py-1.5 text-sm"
+          className="rounded-md border border-border bg-card px-3 py-1.5 text-sm text-card-foreground"
         >
           <option value="">All Statuses</option>
           <option value="PENDING">Pending</option>
@@ -67,7 +68,7 @@ export function WebhookDeliveriesPage() {
           onChange={(e) =>
             setFilters((f) => ({ ...f, eventType: e.target.value, page: 0 }))
           }
-          className="rounded-md border px-3 py-1.5 text-sm"
+          className="rounded-md border border-border bg-card px-3 py-1.5 text-sm text-card-foreground"
         >
           <option value="">All Events</option>
           <option value="PAYMENT_SUCCEEDED">Payment Succeeded</option>
@@ -77,7 +78,7 @@ export function WebhookDeliveriesPage() {
         </select>
       </div>
 
-      <div className="overflow-x-auto rounded-lg border">
+      <div className="overflow-x-auto rounded-lg border border-border">
         <table className="w-full caption-bottom text-sm">
           <thead className="[&_tr]:border-b">
             <tr className="border-b transition-colors hover:bg-muted/50">
@@ -116,7 +117,7 @@ export function WebhookDeliveriesPage() {
                   navigate(`/webhooks/deliveries/${delivery.id}`)
                 }
               >
-                <td className="p-4 align-middle font-medium">
+                <td className="p-4 align-middle font-medium text-card-foreground">
                   {delivery.eventType}
                 </td>
                 <td className="p-4 align-middle font-mono text-xs">
@@ -125,9 +126,9 @@ export function WebhookDeliveriesPage() {
                 <td className="p-4 align-middle">
                   <StatusBadge status={delivery.status} />
                 </td>
-                <td className="p-4 align-middle">{delivery.httpStatus || '-'}</td>
-                <td className="p-4 align-middle">{delivery.attemptCount}</td>
-                <td className="p-4 align-middle">{delivery.durationMs}ms</td>
+                <td className="p-4 align-middle font-mono tabular-nums">{delivery.httpStatus || '-'}</td>
+                <td className="p-4 align-middle font-mono tabular-nums">{delivery.attemptCount}</td>
+                <td className="p-4 align-middle font-mono tabular-nums">{delivery.durationMs}ms</td>
                 <td className="p-4 align-middle text-muted-foreground">
                   {format(new Date(delivery.createdAt), 'MMM d, HH:mm')}
                 </td>
@@ -135,7 +136,7 @@ export function WebhookDeliveriesPage() {
                   <button
                     onClick={(e) => handleRetry(e, delivery.id)}
                     disabled={retryMutation.isPending}
-                    className="inline-flex items-center gap-1 text-sm text-primary hover:underline disabled:opacity-50"
+                    className="inline-flex items-center gap-1 text-sm text-accent font-medium hover:underline disabled:opacity-50"
                   >
                     <RefreshCw className="h-3.5 w-3.5" />
                     Retry
@@ -147,36 +148,11 @@ export function WebhookDeliveriesPage() {
         </table>
       </div>
 
-      {data?.totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">
-            Page {(data?.page || 0) + 1} of {data?.totalPages || 1}
-          </p>
-          <div className="flex gap-2">
-            <button
-              onClick={() =>
-                setFilters((f) => ({ ...f, page: Math.max(0, f.page - 1) }))
-              }
-              disabled={filters.page === 0}
-              className="inline-flex items-center justify-center rounded-md border px-3 py-1.5 text-sm disabled:opacity-50 hover:bg-accent"
-            >
-              Previous
-            </button>
-            <button
-              onClick={() =>
-                setFilters((f) => ({
-                  ...f,
-                  page: Math.min((data?.totalPages || 1) - 1, f.page + 1),
-                }))
-              }
-              disabled={filters.page >= (data?.totalPages || 1) - 1}
-              className="inline-flex items-center justify-center rounded-md border px-3 py-1.5 text-sm disabled:opacity-50 hover:bg-accent"
-            >
-              Next
-            </button>
-          </div>
-        </div>
-      )}
+      <Pagination
+        page={filters.page}
+        totalPages={data?.totalPages || 1}
+        onPageChange={(p) => setFilters((f) => ({ ...f, page: p }))}
+      />
     </div>
   )
 }

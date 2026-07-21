@@ -32,6 +32,8 @@ public class LedgerServiceImpl implements LedgerService {
     ) {
 
         Long amount = payment.getAmount();
+        Long platformFee = (long) (amount * 0.02);
+        Long merchantAmount = amount - platformFee;
 
         createEntry(
                 event,
@@ -47,8 +49,17 @@ public class LedgerServiceImpl implements LedgerService {
                 LedgerEntryType.PAYMENT,
                 LedgerAccount.MERCHANT_PAYABLE,
                 EntrySide.CREDIT,
-                amount,
-                "Amount payable to merchant"
+                merchantAmount,
+                "Amount payable to merchant (net of platform fee)"
+        );
+
+        createEntry(
+                event,
+                LedgerEntryType.PAYMENT,
+                LedgerAccount.PLATFORM_REVENUE,
+                EntrySide.CREDIT,
+                platformFee,
+                "Platform fee (2%)"
         );
     }
 

@@ -20,7 +20,7 @@ export function DataTable({
   }
 
   return (
-    <div className="overflow-x-auto rounded-lg border">
+    <div className="overflow-x-auto rounded-lg border border-border">
       <table className="w-full caption-bottom text-sm">
         <thead className="[&_tr]:border-b">
           <tr className="border-b transition-colors hover:bg-muted/50">
@@ -45,7 +45,7 @@ export function DataTable({
               onClick={() => onRowClick?.(row)}
             >
               {columns.map((col) => (
-                <td key={col.key} className="p-4 align-middle">
+                <td key={col.key} className="p-4 align-middle text-card-foreground">
                   {col.render
                     ? col.render(row[col.key], row)
                     : row[col.key] ?? '-'}

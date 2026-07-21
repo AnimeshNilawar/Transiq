@@ -2,6 +2,8 @@ package com.moddynerd.transiq.payment.settlement.repository;
 
 import com.moddynerd.transiq.merchant.entity.Merchant;
 import com.moddynerd.transiq.payment.settlement.entity.Settlement;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
@@ -19,4 +21,6 @@ public interface SettlementRepository
     List<Settlement> findAllByMerchantOrderByCreatedAtDesc(
             Merchant merchant
     );
+
+    Page<Settlement> findAllByOrderByCreatedAtDesc(Pageable pageable);
 }

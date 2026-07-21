@@ -44,6 +44,16 @@ public class ApiKeyServiceImpl implements ApiKeyService{
 
         Merchant merchant = currentUser.getMerchant();
 
+        long activeCount = apiKeyRepository.countByMerchantAndEnvironmentAndTypeAndStatus(
+                merchant,
+                request.environment(),
+                request.type(),
+                ApiKeyStatus.ACTIVE
+        );
+        if (activeCount >= 3) {
+            throw new ConflictException("Maximum 3 active API keys allowed per environment and type");
+        }
+
         String plainApiKey = ApiKeyGenerator.generate(
                 request.type(),
                 request.environment()

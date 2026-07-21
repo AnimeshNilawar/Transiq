@@ -11,22 +11,28 @@ import com.moddynerd.transiq.payment.attempt.repository.PaymentAttemptRepository
 import com.moddynerd.transiq.payment.entity.CardPaymentDetails;
 import com.moddynerd.transiq.payment.entity.Payment;
 import com.moddynerd.transiq.payment.entity.PaymentStatus;
+import com.moddynerd.transiq.payment.entity.UpiPaymentDetails;
 import com.moddynerd.transiq.payment.ledger.calculator.BalanceCalculator;
 import com.moddynerd.transiq.payment.ledger.dto.MerchantBalanceResponse;
 import com.moddynerd.transiq.payment.ledger.entity.LedgerAccount;
 import com.moddynerd.transiq.payment.ledger.entity.LedgerEntry;
 import com.moddynerd.transiq.payment.ledger.repository.LedgerEntryRepository;
+import com.moddynerd.transiq.payment.refund.dto.CreateRefundRequest;
+import com.moddynerd.transiq.payment.refund.dto.CreateRefundResponse;
 import com.moddynerd.transiq.payment.refund.dto.RefundResponse;
 import com.moddynerd.transiq.payment.refund.entity.Refund;
 import com.moddynerd.transiq.payment.refund.entity.RefundStatus;
 import com.moddynerd.transiq.payment.refund.mapper.RefundMapper;
 import com.moddynerd.transiq.payment.refund.repository.RefundRepository;
+import com.moddynerd.transiq.payment.refund.service.RefundService;
 import com.moddynerd.transiq.payment.repository.PaymentRepository;
+import com.moddynerd.transiq.payment.settlement.dto.CreateSettlementResponse;
 import com.moddynerd.transiq.payment.settlement.dto.SettlementResponse;
 import com.moddynerd.transiq.payment.settlement.entity.Settlement;
 import com.moddynerd.transiq.payment.settlement.entity.SettlementStatus;
 import com.moddynerd.transiq.payment.settlement.mapper.SettlementMapper;
 import com.moddynerd.transiq.payment.settlement.repository.SettlementRepository;
+import com.moddynerd.transiq.payment.settlement.service.SettlementService;
 import com.moddynerd.transiq.webhook.dto.CreateWebhookRequest;
 import com.moddynerd.transiq.webhook.dto.CreateWebhookResponse;
 import com.moddynerd.transiq.webhook.dto.WebhookResponse;
@@ -78,6 +84,8 @@ public class DashboardServiceImpl implements DashboardService {
     private final WebhookDeliveryRetryService webhookDeliveryRetryService;
     private final WebhookService webhookService;
     private final PaymentService paymentService;
+    private final RefundService refundService;
+    private final SettlementService settlementService;
 
     @Override
     public MerchantBalanceResponse getBalance() {
@@ -147,6 +155,16 @@ public class DashboardServiceImpl implements DashboardService {
             );
         }
 
+        DashboardPaymentDetailResponse.DashboardUpiDetailsInfo upiInfo = null;
+
+        if (payment.getUpiPaymentDetails() != null) {
+            UpiPaymentDetails upi = payment.getUpiPaymentDetails();
+            upiInfo = new DashboardPaymentDetailResponse.DashboardUpiDetailsInfo(
+                    upi.getUpiId(),
+                    upi.getUpiTransactionReference()
+            );
+        }
+
         var attempts = paymentAttemptRepository
                 .findAllByPaymentOrderByAttemptNumberDesc(payment)
                 .stream()
@@ -172,8 +190,10 @@ public class DashboardServiceImpl implements DashboardService {
                 payment.getCustomerName(),
                 payment.getOrderId(),
                 payment.getDescription(),
+                payment.getRefundedAmount(),
                 payment.getCreatedAt(),
                 cardInfo,
+                upiInfo,
                 attempts
         );
     }
@@ -365,6 +385,21 @@ public class DashboardServiceImpl implements DashboardService {
         Merchant merchant = currentJwtUserService.getCurrentMerchant();
         paymentService.retryPayment(merchant, paymentReference);
         return getPaymentDetail(paymentReference);
+    }
+
+    @Override
+    @Transactional
+    public CreateRefundResponse createRefund(CreateRefundRequest request, String paymentReference) {
+        Merchant merchant = currentJwtUserService.getCurrentMerchant();
+        String idempotencyKey = UUID.randomUUID().toString();
+        return refundService.createRefundForMerchant(merchant, paymentReference, idempotencyKey, request);
+    }
+
+    @Override
+    @Transactional
+    public CreateSettlementResponse createSettlement() {
+        Merchant merchant = currentJwtUserService.getCurrentMerchant();
+        return settlementService.createSettlementForMerchant(merchant);
     }
 
     private <T, R> DashboardPageResponse<R> toPageResponse(

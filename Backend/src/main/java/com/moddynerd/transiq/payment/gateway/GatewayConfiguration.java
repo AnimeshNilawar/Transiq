@@ -10,6 +10,7 @@ import com.moddynerd.transiq.payment.gateway.bank.implementation.SbiBank;
 import com.moddynerd.transiq.payment.gateway.bank.simulator.AuthorizationSimulator;
 import com.moddynerd.transiq.payment.gateway.common.AuthorizationCodeGenerator;
 import com.moddynerd.transiq.payment.gateway.common.RandomAuthorizationCodeGenerator;
+import com.moddynerd.transiq.payment.gateway.payment.*;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -80,6 +81,21 @@ public class GatewayConfiguration {
     @Bean
     public AcquiringBank kotakAcquiringBank() {
         return new KotakAcquiringBank();
+    }
+
+    @Bean
+    public PaymentHandler upiPaymentHandler(AuthorizationCodeGenerator codeGenerator) {
+        return new UpiPaymentHandler(codeGenerator);
+    }
+
+    @Bean
+    public PaymentHandler netBankingPaymentHandler(AuthorizationCodeGenerator codeGenerator) {
+        return new NetBankingPaymentHandler(codeGenerator);
+    }
+
+    @Bean
+    public PaymentHandler walletPaymentHandler(AuthorizationCodeGenerator codeGenerator) {
+        return new WalletPaymentHandler(codeGenerator);
     }
 
 }

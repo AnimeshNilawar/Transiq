@@ -5,10 +5,11 @@ import {
 } from '@/hooks/useWebhookDeliveries'
 import { StatusBadge } from '@/components/shared/StatusBadge'
 import { DetailSkeleton } from '@/components/shared/LoadingSkeleton'
+import { Item } from '@/components/shared/Item'
 import { format } from 'date-fns'
 import { ArrowLeft, RefreshCw, Loader2 } from 'lucide-react'
 
-export function WebhookDeliveryDetailPage() {
+export default function WebhookDeliveryDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { data: delivery, isLoading } = useWebhookDelivery(id)
@@ -29,30 +30,30 @@ export function WebhookDeliveryDetailPage() {
       <div className="flex items-center gap-4">
         <button
           onClick={() => navigate('/webhooks/deliveries')}
-          className="inline-flex items-center justify-center rounded-md border p-2 hover:bg-accent transition-colors"
+          className="inline-flex items-center justify-center rounded-md border border-border p-2 hover:bg-muted transition-colors text-muted-foreground"
         >
           <ArrowLeft className="h-4 w-4" />
         </button>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">
             Webhook Delivery
           </h1>
           <p className="text-sm text-muted-foreground font-mono">{delivery.id}</p>
         </div>
       </div>
 
-      <div className="rounded-lg border p-6 space-y-4">
+      <div className="bg-card rounded-lg border border-border p-6 space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Details</h2>
+          <h2 className="text-lg font-semibold text-card-foreground">Details</h2>
           <StatusBadge status={delivery.status} />
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           <Item label="Event Type" value={delivery.eventType} />
-          <Item label="Event Reference" value={delivery.eventReference} />
-          <Item label="Endpoint ID" value={delivery.endpointId} />
-          <Item label="HTTP Status" value={delivery.httpStatus || '-'} />
-          <Item label="Attempt Count" value={delivery.attemptCount} />
-          <Item label="Duration" value={`${delivery.durationMs}ms`} />
+          <Item label="Event Reference" value={delivery.eventReference} mono />
+          <Item label="Endpoint ID" value={delivery.endpointId} mono />
+          <Item label="HTTP Status" value={delivery.httpStatus || '-'} mono />
+          <Item label="Attempt Count" value={delivery.attemptCount} mono />
+          <Item label="Duration" value={`${delivery.durationMs}ms`} mono />
           <Item
             label="Created"
             value={format(
@@ -79,7 +80,7 @@ export function WebhookDeliveryDetailPage() {
         </div>
 
         {delivery.failureReason && (
-          <div className="pt-4 border-t">
+          <div className="pt-4 border-t border-border">
             <p className="text-sm font-medium text-destructive mb-1">
               Failure Reason
             </p>
@@ -90,8 +91,8 @@ export function WebhookDeliveryDetailPage() {
         )}
       </div>
 
-      <div className="rounded-lg border p-6 space-y-4">
-        <h2 className="text-lg font-semibold">Retry Policy</h2>
+      <div className="bg-card rounded-lg border border-border p-6 space-y-4">
+        <h2 className="text-lg font-semibold text-card-foreground">Retry Policy</h2>
         <div className="text-sm text-muted-foreground space-y-2">
           <p>
             Failed deliveries are retried with exponential backoff:
@@ -110,7 +111,7 @@ export function WebhookDeliveryDetailPage() {
           <button
             onClick={() => retryMutation.mutateAsync(delivery.id)}
             disabled={retryMutation.isPending}
-            className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors"
+            className="inline-flex items-center gap-2 rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-foreground hover:bg-accent/90 disabled:opacity-50 transition-colors"
           >
             {retryMutation.isPending ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -121,15 +122,6 @@ export function WebhookDeliveryDetailPage() {
           </button>
         )}
       </div>
-    </div>
-  )
-}
-
-function Item({ label, value }) {
-  return (
-    <div>
-      <p className="text-sm text-muted-foreground">{label}</p>
-      <p className="text-sm font-medium mt-0.5">{value || '-'}</p>
     </div>
   )
 }

@@ -61,6 +61,10 @@ public class AuthService {
             throw new UnauthorizedException("Invalid email or password");
         }
 
+        if (!user.isEnabled()) {
+            throw new UnauthorizedException("Account is disabled");
+        }
+
         String accessToken = jwtService.generateAccessToken(user);
 
         return new LoginResponse(

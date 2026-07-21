@@ -55,3 +55,14 @@ export function createRefund(paymentReference, data) {
     headers: { 'Idempotency-Key': generateIdempotencyKey() },
   })
 }
+
+/**
+ * Create a refund from the dashboard (JWT auth)
+ * @param {{ paymentReference: string, amount: number, reason: string }} data
+ * @returns {Promise<import('axios').AxiosResponse<{ refundReference: string, amount: number, status: string }>>}
+ */
+export function createDashboardRefund(data) {
+  return jwtClient.post('/dashboard/refunds', data, {
+    params: { paymentReference: data.paymentReference },
+  })
+}

@@ -1,8 +1,12 @@
 package com.moddynerd.transiq.apikey.repository;
 
-import com.moddynerd.transiq.apikey.entity.ApiKeyStatus;
 import com.moddynerd.transiq.apikey.entity.ApiKey;
+import com.moddynerd.transiq.apikey.entity.ApiKeyEnvironment;
+import com.moddynerd.transiq.apikey.entity.ApiKeyStatus;
+import com.moddynerd.transiq.apikey.entity.ApiKeyType;
 import com.moddynerd.transiq.merchant.entity.Merchant;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -23,4 +27,13 @@ public interface ApiKeyRepository extends JpaRepository<ApiKey, UUID> {
             String keyPrefix,
             ApiKeyStatus status
     );
+
+    long countByMerchantAndEnvironmentAndTypeAndStatus(
+            Merchant merchant,
+            ApiKeyEnvironment environment,
+            ApiKeyType type,
+            ApiKeyStatus status
+    );
+
+    Page<ApiKey> findAllByOrderByCreatedAtDesc(Pageable pageable);
 }

@@ -32,6 +32,7 @@ public class SettlementEventListener {
 
         FinancialEvent financialEvent =
                 financialEventService.create(
+                        settlement.getMerchant(),
                         FinancialEventType.SETTLEMENT,
                         settlement.getSettlementReference(),
                         "Settlement completed"

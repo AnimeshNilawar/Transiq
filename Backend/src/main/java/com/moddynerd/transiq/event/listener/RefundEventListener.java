@@ -32,6 +32,7 @@ public class RefundEventListener {
 
         FinancialEvent financialEvent =
                 financialEventService.create(
+                        refund.getMerchant(),
                         FinancialEventType.REFUND,
                         refund.getRefundReference(),
                         "Refund completed"

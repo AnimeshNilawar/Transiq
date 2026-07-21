@@ -24,6 +24,9 @@ public class WebhookEventTypeMapper {
             case "settlement.completed" ->
                     WebhookEventType.SETTLEMENT_COMPLETED;
 
+            case "chargeback.created" ->
+                    WebhookEventType.CHARGEBACK_CREATED;
+
             default ->
                     throw new IllegalArgumentException(
                             "Unknown webhook type: " + type

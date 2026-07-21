@@ -43,6 +43,12 @@ public class WebhookDelivery extends BaseEntity {
     @Builder.Default
     private Integer attemptCount = 0;
 
+    @Column(nullable = false)
+    private String eventReference;
+
+    @Column(nullable = false)
+    private String eventType;
+
     @Column
     private Instant lastAttemptAt;
 

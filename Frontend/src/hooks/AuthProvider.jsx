@@ -1,14 +1,10 @@
-import { createContext, useContext, useState, useCallback, useMemo, useEffect } from 'react'
+import { useState, useCallback, useMemo, useEffect } from 'react'
+import { AuthContext } from '@/lib/auth-context'
 import { login as apiLogin, register as apiRegister } from '@/api/auth'
 import { getMe } from '@/api/me'
 import { queryClient } from '@/lib/queryClient'
 
-const AuthContext = createContext(null)
-
-/**
- * @param {{ children: React.ReactNode }} props
- */
-export function AuthProvider({ children }) {
+export default function AuthProvider({ children }) {
   const [token, setToken] = useState(() => localStorage.getItem('jwt_token'))
   const [user, setUser] = useState(null)
   const [authLoading, setAuthLoading] = useState(true)
@@ -34,16 +30,23 @@ export function AuthProvider({ children }) {
     }
   }, [token, fetchUser])
 
+  const [now, setNow] = useState(Date.now())
+
+  useEffect(() => {
+    const interval = setInterval(() => setNow(Date.now()), 60000)
+    return () => clearInterval(interval)
+  }, [])
+
   const isAuthenticated = useMemo(() => {
     if (!token) return false
     try {
       const payload = JSON.parse(atob(token.split('.')[1]))
       if (!payload || !payload.exp) return false
-      return payload.exp * 1000 > Date.now()
+      return payload.exp * 1000 > now
     } catch {
       return false
     }
-  }, [token])
+  }, [token, now])
 
   const login = useCallback(async (email, password) => {
     const response = await apiLogin({ email, password })
@@ -71,15 +74,4 @@ export function AuthProvider({ children }) {
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
-}
-
-/**
- * @returns {{ token: string|null, user: import('@/api/me').MeResponse|null, isAuthenticated: boolean, authLoading: boolean, login: Function, register: Function, logout: Function, refreshUser: Function }}
- */
-export function useAuth() {
-  const context = useContext(AuthContext)
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider')
-  }
-  return context
 }
