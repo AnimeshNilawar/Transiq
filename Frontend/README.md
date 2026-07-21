@@ -1,16 +1,64 @@
-# React + Vite
+# Transiq Frontend — Merchant Dashboard & Admin Console
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+React 19 SPA with Tailwind CSS 4, TanStack React Query 5, and Recharts.
 
-Currently, two official plugins are available:
+Part of the [Transiq](../README.md) payment infrastructure platform.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Tech Stack
 
-## React Compiler
+| Technology | Purpose |
+|-----------|---------|
+| **React 19** | UI framework with concurrent features |
+| **Vite 8** | Build tool with instant HMR and Oxlint |
+| **React Router 7** | Declarative routing with loaders/actions |
+| **TanStack React Query 5** | Server state, caching, background refetch, pagination |
+| **Tailwind CSS 4** | Utility-first styling with CSS custom property design tokens |
+| **Recharts 3** | Declarative chart components (AreaChart, BarChart) |
+| **Zod 4** | Runtime form validation schemas |
+| **Axios** | HTTP client with request/response interceptors |
+| **React Hook Form** | Performant form state management |
+| **Lucide React** | Consistent icon set |
+| **Sonner** | Toast notifications |
+| **date-fns** | Date formatting and manipulation |
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Feature Modules
 
-## Expanding the Oxlint configuration
+| Module | Description |
+|--------|-------------|
+| `auth/` | Login, Register |
+| `dashboard/` | Overview with balance trend chart |
+| `payments/` | Payment list, detail, retry |
+| `refunds/` | Refund list, create, detail |
+| `settlements/` | Settlement list, create, detail |
+| `ledger/` | Balance card + paginated entries |
+| `webhooks/` | Endpoint CRUD, delivery list/detail, retry, event replay |
+| `api-keys/` | API key create, list, rotate, revoke |
+| `admin/` | 10 pages: dashboard, merchants, payments, refunds, settlements, users, API keys, webhook deliveries |
+| `checkout/` | Public checkout form (API-key authenticated) |
+| `settings/` | Profile and merchant settings |
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+## API Layer
+
+Two Axios instances handle authentication automatically:
+
+- **`jwtClient`** — Reads JWT from `localStorage`, attaches as `Bearer` header, redirects to `/login` on 401
+- **`apiKeyClient`** — Reads API key from `sessionStorage`, attaches as auth header
+
+## State Management
+
+- Server state: **TanStack React Query 5** (caching, invalidation, paginated queries)
+- Auth: `localStorage` for JWT, `sessionStorage` for checkout API key
+- Navigation: React Router 7 URL state
+
+## Getting Started
+
+```bash
+# Set API base URL
+$env:VITE_API_BASE_URL="http://localhost:8080/api/v1"
+
+# Install & run
+npm install
+npm run dev
+```
+
+Runs on `http://localhost:5173`.

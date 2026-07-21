@@ -1,82 +1,103 @@
-# Transiq — Payment Gateway
+# Transiq Backend — Payment Gateway API
 
-A cloud-native payment gateway built with Java 21 / Spring Boot 4.1 / Hibernate 7 / Jackson 3 / PostgreSQL.
+Java 21 / Spring Boot 4.1 / Hibernate 7 / PostgreSQL 16 payment infrastructure backend.
 
-## Architecture
+Part of the [Transiq](../README.md) payment infrastructure platform.
+
+## Tech Stack
+
+| Technology | Purpose |
+|-----------|---------|
+| **Java 21** | Virtual Threads, pattern matching, records, sealed classes |
+| **Spring Boot 4.1** | Application framework |
+| **Spring Security 6** | 6 ordered security filter chains |
+| **Spring Data JPA / Hibernate 7** | ORM with repository abstraction |
+| **PostgreSQL 16** | Relational database |
+| **Flyway** | Version-controlled schema migrations |
+| **jjwt 0.12.7** | JWT parsing and validation |
+| **AES Encryption** | Webhook secret storage |
+
+## Architecture Summary
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                         REST API                             │
-│  POST /payments  POST /confirm  POST /refunds  POST /settle │
-│  GET /payments   GET /refunds   GET /settle    GET /ledger  │
-│  POST /webhooks  GET /deliveries  POST /replay              │
-└─────────────────────────┬───────────────────────────────────┘
-                          │
-┌─────────────────────────▼───────────────────────────────────┐
-│                     Auth Layer                                │
-│  JWT Auth (dashboard)      API Key Auth (merchant API)       │
-│  Merchant CRUD             BCrypt hash + prefix lookup       │
-└─────────────────────────┬───────────────────────────────────┘
-                          │
-┌─────────────────────────▼───────────────────────────────────┐
-│                   Payment Processor                           │
-│  Idempotency check → State machine → Gateway auth → Event   │
-└─────────────────────────┬───────────────────────────────────┘
-                          │
-┌─────────────────────────▼───────────────────────────────────┐
-│              Gateway Authorization Layer                      │
-│                                                               │
-│  GatewayAuthorizationService                                  │
-│       ↓                                                      │
-│  GatewayAuthorizationEngine (orchestrator)                    │
-│       ↓                                                      │
-│  ┌──────────────────────────────────────────────────────┐   │
-│  │              Routing Engine                           │   │
-│  │  DefaultRoutingEngine → RoutingDecision               │   │
-│  │  { acquirer, network, issuerBank, reason }            │   │
-│  └──────────────────────────────────────────────────────┘   │
-│       ↓                                                      │
-│  ┌──────────────────────────────────────────────────────┐   │
-│  │           Acquiring Bank Layer                        │   │
-│  │  AcquiringRegistry → AcquiringBank.supports(network)  │   │
-│  │  HDFC / ICICI / AXIS / SBI / KOTAK                    │   │
-│  └──────────────────────────────────────────────────────┘   │
-│       ↓                                                      │
-│  ┌──────────────────────────────────────────────────────┐   │
-│  │           Payment Network Layer                        │   │
-│  │  NetworkRegistry → PaymentNetwork.authorize(req)      │   │
-│  │  VISA / MASTERCARD / RUPAY                             │   │
-│  └──────────────────────────────────────────────────────┘   │
-│       ↓                                                      │
-│  ┌──────────────────────────────────────────────────────┐   │
-│  │           Issuer Bank Layer                            │   │
-│  │  IssuerResolver → BankRegistry → Bank.authorize(req)  │   │
-│  │  HDFC / ICICI / SBI / AXIS                             │   │
-│  │    └─ AuthorizationSimulator                           │   │
-│  │       └─ BankDecisionEngine (probability engine)       │   │
-│  └──────────────────────────────────────────────────────┘   │
-│                                                               │
-│  BIN Resolver → CardMetadata → AuthorizationRequest           │
-└─────────────────────────┬───────────────────────────────────┘
-                          │
-┌─────────────────────────▼───────────────────────────────────┐
-│                  Domain Events & Side Effects                  │
-│                                                               │
-│  PaymentSucceededEvent                                        │
-│    ├── WebhookEventListener ─── WebhookEvent ─── Webhook     │
-│    │                             + WebhookDelivery(s)         │
-│    ├── PaymentEventListener ─── LedgerEntry + FinancialEvent │
-│    └── TransactionListener ─── Settlement + SettlementItems  │
-│                                                               │
-│  RefundSucceededEvent → LedgerEntry + FinancialEvent          │
-│  SettlementCompletedEvent → LedgerEntry + FinancialEvent      │
-└─────────────────────────────────────────────────────────────┘
+REST API (JSON)
+    ↓
+Security Filter Chains (6 ordered chains)
+  ├── Public: health, register
+  ├── JWT optional: auth/*
+  ├── JWT + ROLE: admin/* (PLATFORM_ADMIN only)
+  ├── API Key: payments/*, refunds/*, settlements/*, webhooks/*
+  ├── JWT: dashboard/**
+  └── JWT: /** (catch-all)
+    ↓
+Controllers → Services → Repositories → PostgreSQL
+    ↓
+Domain Events → Event Listeners → Ledger + Webhooks
 ```
 
-## Key Design Decisions
+## Security Filter Chains
 
-- **Event-centric webhooks**: One `WebhookEvent` (payload stored once) → many `WebhookDelivery` (one per endpoint)
-- **Two-factor auth**: JWT for dashboard users, API key (BCrypt hash) for machine-to-machine
-- **Immutable ledger**: Double-entry, write-only entries per transaction type
-- **Gateway is pluggable**: Interfaces for every layer — routing, acquiring, network, issuer
-- **Bank simulation**: Pure-Java `BankDecisionEngine` with configurable approval probabilities
+| Order | Pattern | Auth | Key Filter |
+|-------|---------|------|------------|
+| 0 | `/actuator/**`, `/merchants/register` | None | — |
+| 1 | `/auth/**` | JWT optional | `JwtAuthenticationFilter` |
+| 2 | `/admin/**` | JWT + Role | `JwtAuthenticationFilter` + `@PreAuthorize` |
+| 3 | API paths | API Key | `ApiKeyAuthenticationFilter` + `ApiKeyScopeFilter` |
+| 4 | `/dashboard/**` | JWT | `JwtAuthenticationFilter` |
+| 5 | `/**` | JWT | `JwtAuthenticationFilter` |
+
+## Key Packages
+
+| Package | Responsibility |
+|---------|---------------|
+| `admin/` | Platform admin controller, service, analytics, alerts |
+| `apikey/` | API key entity, auth filter, scope filter, service |
+| `auth/` | JWT auth: controller, service, entity, filter, UserDetailsService |
+| `config/` | SecurityConfig, CORS, RateLimitingFilter |
+| `dashboard/` | Merchant dashboard controller, service, DTOs |
+| `event/` | Domain event records, publishers, event listeners |
+| `merchant/` | Merchant entity, service, controller |
+| `payment/` | Payment + Card/UPI details entities |
+| `payment/attempt/` | Payment attempt entity, retry logic |
+| `payment/gateway/` | Pluggable routing engine, banks, networks, authorization |
+| `payment/ledger/` | Double-entry accounting, balance calculation |
+| `payment/refund/` | Refund entity, service, controller |
+| `payment/settlement/` | Settlement entity, service, controller |
+| `payment/chargeback/` | Chargeback entity, service, controller |
+| `payment/adjustment/` | Adjustment entity, service, controller |
+| `payment/financialEvent/` | Financial event entity, service |
+| `payment/expiration/` | Payment expiry scheduler |
+| `shared/` | BaseEntity, GlobalExceptionHandler, encryption, generators |
+| `webhook/` | Webhook endpoint/event/delivery entities, dispatcher, sender, retry, controller |
+
+## Gateway Architecture
+
+The payment gateway simulates a real-world acquiring pipeline with pluggable interfaces:
+
+```
+RoutingEngine (interface)
+  → DefaultRoutingEngine
+    → BIN Resolver → CardMetadata
+    → NetworkRegistry → PaymentNetwork (Visa/Mastercard/RuPay)
+    → AcquiringRegistry → AcquiringBank (HDFC/ICICI/SBI/AXIS/Kotak)
+    → AuthorizationSimulator → BankDecisionEngine
+```
+
+## Getting Started
+
+```bash
+# Prerequisites: Java 21+, PostgreSQL 16+, Maven 3.9+
+
+# Configure database
+$env:DB_HOST="localhost"
+$env:DB_PORT="5432"
+$env:DB_NAME="transiq"
+$env:DB_USERNAME="postgres"
+$env:DB_PASSWORD="postgres"
+$env:CORS_ALLOWED_ORIGINS="http://localhost:5173"
+
+# Run
+mvn spring-boot:run
+```
+
+Server starts on `http://localhost:8080`. Default admin credentials: `admin@transiq.com` / `admin123`.
