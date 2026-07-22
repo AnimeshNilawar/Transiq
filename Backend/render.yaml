@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: transiq-backend
+    runtime: java
+    plan: free
+    buildCommand: "cd Backend && mvn clean package -DskipTests"
+    startCommand: "cd Backend && java -jar target/*.jar"
+    envVars:
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        sync: false
+      - key: DB_NAME
+        sync: false
+      - key: DB_USERNAME
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_EXPIRATION
+        sync: false
+      - key: ENCRYPTION_KEY
+        sync: false
+    healthCheckPath: /actuator/health

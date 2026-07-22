@@ -1,10 +1,10 @@
-import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import useAuth from '@/hooks/useAuth'
 import { Loader2 } from 'lucide-react'
+import ColdStartMessage from '@/components/shared/ColdStartMessage'
 
 const loginSchema = z.object({
   email: z.string().email('Please enter a valid email'),
@@ -14,25 +14,21 @@ const loginSchema = z.object({
 export default function LoginPage() {
   const { login } = useAuth()
   const navigate = useNavigate()
-  const [isLoading, setIsLoading] = useState(false)
 
   const {
     register,
     handleSubmit,
-    formState: { errors },
+    formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(loginSchema),
   })
 
   const onSubmit = async (data) => {
-    setIsLoading(true)
     try {
       await login(data.email, data.password)
-      navigate('/')
+      navigate('/dashboard')
     } catch {
       // Error is handled by the axios interceptor
-    } finally {
-      setIsLoading(false)
     }
   }
 
@@ -92,13 +88,19 @@ export default function LoginPage() {
 
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isSubmitting}
               className="w-full inline-flex items-center justify-center rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-foreground hover:bg-accent/90 disabled:opacity-50 transition-colors"
             >
-              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Sign In
             </button>
           </form>
+
+          {isSubmitting && (
+            <div className="mt-4">
+              <ColdStartMessage />
+            </div>
+          )}
         </div>
 
         <p className="text-center text-sm text-muted-foreground">

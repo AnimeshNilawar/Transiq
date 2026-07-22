@@ -18,7 +18,7 @@ import { cn } from '@/lib/utils'
 import useAuth from '@/hooks/useAuth'
 
 const navItems = [
-  { to: '/', label: 'Dashboard', icon: LayoutDashboard },
+  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/payments', label: 'Payments', icon: CreditCard },
   { to: '/refunds', label: 'Refunds', icon: RotateCcw },
   { to: '/settlements', label: 'Settlements', icon: Building2 },
@@ -56,7 +56,7 @@ export function Sidebar({ open, onClose }) {
             <NavLink
               key={item.to}
               to={item.to}
-              end={item.to === '/'}
+               end={item.to === '/dashboard'}
               onClick={onClose}
               className={({ isActive }) =>
                 cn(

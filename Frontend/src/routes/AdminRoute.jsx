@@ -8,7 +8,7 @@ export function AdminRoute() {
 
   if (!isAuthenticated) return <Navigate to="/login" replace />
 
-  if (user?.role !== 'PLATFORM_ADMIN') return <Navigate to="/" replace />
+  if (user?.role !== 'PLATFORM_ADMIN') return <Navigate to="/dashboard" replace />
 
   return <Outlet />
 }

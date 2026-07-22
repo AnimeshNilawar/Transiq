@@ -9,6 +9,7 @@ import { AdminRoute } from '@/routes/AdminRoute'
 import { AppShell } from '@/components/layout/AppShell'
 import { ErrorBoundary } from '@/components/shared/ErrorBoundary'
 
+const MarketingPage = lazy(() => import('@/features/marketing/MarketingPage'))
 const LoginPage = lazy(() => import('@/features/auth/LoginPage'))
 const RegisterPage = lazy(() => import('@/features/auth/RegisterPage'))
 const NotFoundPage = lazy(() => import('@/features/auth/NotFoundPage'))
@@ -26,6 +27,14 @@ const WebhookDeliveriesPage = lazy(() => import('@/features/webhooks/WebhookDeli
 const WebhookDeliveryDetailPage = lazy(() => import('@/features/webhooks/WebhookDeliveryDetailPage'))
 const SettingsPage = lazy(() => import('@/features/settings/SettingsPage'))
 const CheckoutDemoPage = lazy(() => import('@/features/checkout/CheckoutDemoPage'))
+const DocsLayout = lazy(() => import('@/features/docs/DocsLayout'))
+const DocsQuickStart = lazy(() => import('@/features/docs/DocsQuickStart'))
+const DocsAuthentication = lazy(() => import('@/features/docs/DocsAuthentication'))
+const DocsPayments = lazy(() => import('@/features/docs/DocsPayments'))
+const DocsRefunds = lazy(() => import('@/features/docs/DocsRefunds'))
+const DocsSettlements = lazy(() => import('@/features/docs/DocsSettlements'))
+const DocsWebhooks = lazy(() => import('@/features/docs/DocsWebhooks'))
+const DocsApiReference = lazy(() => import('@/features/docs/DocsApiReference'))
 const AdminDashboardPage = lazy(() => import('@/features/admin/AdminDashboardPage'))
 const AdminMerchantsPage = lazy(() => import('@/features/admin/AdminMerchantsPage'))
 const AdminMerchantDetailPage = lazy(() => import('@/features/admin/AdminMerchantDetailPage'))
@@ -66,13 +75,24 @@ export default function App() {
           <BrowserRouter>
             <Suspense fallback={<PageSpinner />}>
               <Routes>
+                <Route path="/" element={<MarketingPage />} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
                 <Route path="/checkout-demo" element={<CheckoutDemoPage />} />
 
+                <Route element={<DocsLayout />}>
+                  <Route path="/docs" element={<DocsQuickStart />} />
+                  <Route path="/docs/authentication" element={<DocsAuthentication />} />
+                  <Route path="/docs/payments" element={<DocsPayments />} />
+                  <Route path="/docs/refunds" element={<DocsRefunds />} />
+                  <Route path="/docs/settlements" element={<DocsSettlements />} />
+                  <Route path="/docs/webhooks" element={<DocsWebhooks />} />
+                  <Route path="/docs/api-reference" element={<DocsApiReference />} />
+                </Route>
+
                 <Route element={<ProtectedRoute />}>
                   <Route element={<AppShell />}>
-                    <Route path="/" element={<DashboardPage />} />
+                    <Route path="/dashboard" element={<DashboardPage />} />
                     <Route path="/payments" element={<PaymentsPage />} />
                     <Route
                       path="/payments/:paymentReference"

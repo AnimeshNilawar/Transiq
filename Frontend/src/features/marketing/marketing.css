@@ -1,0 +1,31 @@
+.marketing {
+  --mkt-ink: #14122B;
+  --mkt-paper: #F6F7FB;
+  --mkt-accent: #EA580C;
+  --mkt-approved: #16A34A;
+  --mkt-declined: #DC2626;
+  --mkt-ink-muted: #6B7280;
+}
+
+@keyframes ticker-fade-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.ticker-row {
+  animation: ticker-fade-in 0.2s ease-out;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.live-dot {
+  animation: pulse-dot 1.5s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ticker-row { animation: none; }
+  .live-dot { animation: none; }
+}
