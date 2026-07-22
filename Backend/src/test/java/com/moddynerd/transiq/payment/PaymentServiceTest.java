@@ -163,7 +163,7 @@ class PaymentServiceTest {
                 .build();
 
         ConfirmPaymentRequest request = new ConfirmPaymentRequest(
-                "valid_secret", PaymentMethodType.CARD, null, null, null, null, null
+                "valid_secret", PaymentMethodType.CARD, null, null, null, null, null, null
         );
 
         when(currentApiKeyService.getCurrentPrincipal()).thenReturn(apiKeyPrincipal);
@@ -173,7 +173,7 @@ class PaymentServiceTest {
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         PaymentResponse expectedResponse = new PaymentResponse(
-                payment.getId(), "pay_ref_123", 1000L, Currency.INR, PaymentStatus.PROCESSING, "user@example.com", "order-001", Instant.now()
+                payment.getId(), "pay_ref_123", 1000L, Currency.INR, PaymentStatus.PROCESSING, "user@example.com", "order-001", Instant.now(), null, null
         );
         when(paymentMapper.toResponse(payment)).thenReturn(expectedResponse);
 
@@ -200,7 +200,7 @@ class PaymentServiceTest {
                 .build();
 
         ConfirmPaymentRequest request = new ConfirmPaymentRequest(
-                "invalid_secret", PaymentMethodType.CARD, null, null, null, null, null
+                "invalid_secret", PaymentMethodType.CARD, null, null, null, null, null, null
         );
 
         when(currentApiKeyService.getCurrentPrincipal()).thenReturn(apiKeyPrincipal);
@@ -219,7 +219,7 @@ class PaymentServiceTest {
     @Test
     void confirmPayment_paymentNotFound_shouldFail() {
         ConfirmPaymentRequest request = new ConfirmPaymentRequest(
-                "secret", PaymentMethodType.CARD, null, null, null, null, null
+                "secret", PaymentMethodType.CARD, null, null, null, null, null, null
         );
 
         when(currentApiKeyService.getCurrentPrincipal()).thenReturn(apiKeyPrincipal);
@@ -250,7 +250,7 @@ class PaymentServiceTest {
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         PaymentResponse expectedResponse = new PaymentResponse(
-                payment.getId(), "pay_ref_123", 1000L, Currency.INR, PaymentStatus.REQUIRES_PAYMENT_METHOD, null, null, Instant.now()
+                payment.getId(), "pay_ref_123", 1000L, Currency.INR, PaymentStatus.REQUIRES_PAYMENT_METHOD, null, null, Instant.now(), null, null
         );
         when(paymentMapper.toResponse(payment)).thenReturn(expectedResponse);
 
@@ -346,7 +346,7 @@ class PaymentServiceTest {
                 .thenReturn(Optional.of(payment));
 
         PaymentResponse expectedResponse = new PaymentResponse(
-                payment.getId(), "pay_ref_123", 5000L, Currency.USD, PaymentStatus.SUCCEEDED, null, null, Instant.now()
+                payment.getId(), "pay_ref_123", 5000L, Currency.USD, PaymentStatus.SUCCEEDED, null, null, Instant.now(), null, null
         );
         when(paymentMapper.toResponse(payment)).thenReturn(expectedResponse);
 
