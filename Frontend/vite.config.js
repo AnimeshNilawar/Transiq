@@ -14,7 +14,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/actuator': {
-        target: 'http://localhost:8080',
+        target: 'https://transiq.onrender.com',
         changeOrigin: true,
       },
     },
